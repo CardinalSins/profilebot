@@ -18,6 +18,18 @@ sub register_handlers {
     $BotCore->register_handler('user_created', \&BotCore::Modules::Database::new_user);
     $BotCore->register_handler('user_edited', \&BotCore::Modules::Database::saveuser);
     $BotCore->register_handler('reload_user', \&BotCore::Modules::Database::find_user);
+    $BotCore->register_handler('delete_user', \&BotCore::Modules::Database::delete_user);
+}
+
+sub delete_user {
+    my $self = shift;
+    my $nick = shift;
+    return unless defined $self->get_user($nick);
+    my $dbh = $self->{DBH};
+    my %user = $self->get_user($nick);
+    my $query = 'DELETE FROM user WHERE name = ? LIMIT 1';
+    my $statement = $dbh->prepare($query);
+    $statement->execute($user{name});
 }
 
 sub new_user {
@@ -86,7 +98,7 @@ sub find_user {
     my $row = $statement->fetchrow_hashref() or return 1;
     my %user = %{$row};
     $self->debug("$username loaded.");
-    %{$self->{users}{lc $user{name}}} = %user;
+    $self->save_user($user{name}, %user);
     return 1;
 }
 

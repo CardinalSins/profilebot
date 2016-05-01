@@ -96,6 +96,7 @@ sub mkpass {
 
 sub get_user {
     my ($self, $name) = @_;
+    $self->emit_event('reload_user', $name);
     if (!exists($self->{users}{lc $name})) {
         return undef;
     }
@@ -361,7 +362,7 @@ sub parse {
             }
             $self->{IRC}->yield(privmsg => $recipient => $message);
         }
-        case "!lock" {
+        case "!delete" {
             my $victim = shift @arg;
             my $poco_object = $sender->get_heap();
             my $val = $poco_object->is_channel_operator($self->{options}{botchan}, $nick);
@@ -377,7 +378,7 @@ sub parse {
                 else {
                     $message = "As you wish. I shall see them to the door.";
                     $self->emit_event('delete_user', $victim);
-                    delete $self->{users}{$victim};
+                    delete $self->{users}{lc $victim};
                 }
             }
             my $recipient;
