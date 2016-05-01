@@ -429,32 +429,39 @@ sub parse {
             }
             $self->{IRC}->yield(privmsg => $recipient => $message);
         }
+        case "!profilecommands" {
+            $self->{IRC}->yield(notice => $nick => "====== Profile Commands supported by PoCoProfileBot v1.0.0 ======");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!setup@{[NORMAL]}:           Start the profile creation process.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!age@{[NORMAL]}:             Set your age. Initiates the next step, if creating a profile.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!gender@{[NORMAL]}:          Set your gender identity. Initiates the next step, if creating a profile.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!orientation@{[NORMAL]}:     Set your orientation. Initiates the next step, if creating a profile.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!role@{[NORMAL]}:            Set your role. Initiates the next step, if creating a profile.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!location@{[NORMAL]}:        Set your location. Initiates the next step, if creating a profile.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!kinks@{[NORMAL]}:           Set your kinks. Initiates the next step, if creating a profile.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!limits@{[NORMAL]}:          Set your limits. Initiates the next step, if creating a profile.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!description@{[NORMAL]}:     Set your description. Initiates the next step, if creating a profile.");
+        }
         case "!commands" {
-            $self->{IRC}->yield(notice => $nick => "Commands supported by PoCoProfileBot v1.0.0:");
-            $self->{IRC}->yield(notice => $nick => "====== General Commands ======");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!commands@{[NORMAL]}:        @{[LIGHT_GREY]}Show this help text.");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!info@{[NORMAL]}:            @{[LIGHT_GREY]}Show information about the bot.");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!rules@{[NORMAL]}:           @{[LIGHT_GREY]}Show the channel rules.");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!jeeves@{[NORMAL]}:          @{[LIGHT_GREY]}Alert the channel ops that you need assistance.");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!restrict@{[NORMAL]}:        @{[LIGHT_GREY]}Restrict viewing your profile to users with profiles only.");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!unrestrict@{[NORMAL]}:      @{[LIGHT_GREY]}Remove the restriction from your profile.");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!setup@{[NORMAL]}:           @{[LIGHT_GREY]}Initiate the profile creation sequence.");
-            $self->{IRC}->yield(notice => $nick => "====== Profile Commands ======");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!age@{[NORMAL]}:             @{[LIGHT_GREY]}Set your age. Initiates the next step, if creating a profile.");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!gender@{[NORMAL]}:          @{[LIGHT_GREY]}Set your gender identity. Initiates the next step, if creating a profile.");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!orientation@{[NORMAL]}:     @{[LIGHT_GREY]}Set your orientation. Initiates the next step, if creating a profile.");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!role@{[NORMAL]}:            @{[LIGHT_GREY]}Set your role. Initiates the next step, if creating a profile.");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!location@{[NORMAL]}:        @{[LIGHT_GREY]}Set your location. Initiates the next step, if creating a profile.");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!kinks@{[NORMAL]}:           @{[LIGHT_GREY]}Set your kinks. Initiates the next step, if creating a profile.");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!limits@{[NORMAL]}:          @{[LIGHT_GREY]}Set your limits. Initiates the next step, if creating a profile.");
-            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_BLUE]}!description@{[NORMAL]}:     @{[LIGHT_GREY]}Set your description. Initiates the next step, if creating a profile.");
+            $self->{IRC}->yield(notice => $nick => "====== General Commands supported by PoCoProfileBot v1.0.0 ======");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!commands@{[NORMAL]}:        Show this help text.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!info@{[NORMAL]}:            Show information about the bot.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!rules@{[NORMAL]}:           Show the channel rules.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!jeeves@{[NORMAL]}:          Alert the channel ops that you need assistance.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!restrict@{[NORMAL]}:        Restrict viewing your profile to users with profiles only.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!unrestrict@{[NORMAL]}:      Remove the restriction from your profile.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!profilecommands@{[NORMAL]}: Show the profile-related commands.");
+            $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREEN]}!allcommands@{[NORMAL]}:     Show all commands. May be text-heavy.");
             if ($chanop) {
-                $self->{IRC}->yield(notice => $nick => "====== Admin Commands ======");
-                $self->{IRC}->yield(notice => $nick => "@{[TEAL]}!lock@{[NORMAL]}:            @{[LIGHT_GREY]}Lock a user's profile.");
-                $self->{IRC}->yield(notice => $nick => "@{[TEAL]}!delete@{[NORMAL]}:          @{[LIGHT_GREY]}Delete a user's profile.@{[BOLD]} This is immediate and irreversible.");
-                $self->{IRC}->yield(notice => $nick => "@{[TEAL]}!approve@{[NORMAL]}:         @{[LIGHT_GREY]}Approve a user's profile. Approved profiles can be viewed, pending will only show teasers.");
-                $self->{IRC}->yield(notice => $nick => "@{[TEAL]}!unapprove@{[NORMAL]}:       @{[LIGHT_GREY]}Set a user's profile to pending.");
+                $self->{IRC}->yield(notice => $nick => "@{[TEAL]}!opcommands@{[NORMAL]}:      Show only the op commands.");
             }
+        }
+        case "!opcommands" {
+            return unless $chanop;
+            $self->{IRC}->yield(notice => $nick => "====== Admin Commands supported by PoCoProfileBot v1.0.0 ======");
+            $self->{IRC}->yield(notice => $nick => "@{[TEAL]}!lock@{[NORMAL]}:            Lock a user's profile.");
+            $self->{IRC}->yield(notice => $nick => "@{[TEAL]}!delete@{[NORMAL]}:          Delete a user's profile.@{[BOLD]} This is immediate and irreversible@{[NORMAL]}.");
+            $self->{IRC}->yield(notice => $nick => "@{[TEAL]}!approve@{[NORMAL]}:         Approve a user's profile. Approved profiles can be viewed, pending will only show teasers.");
+            $self->{IRC}->yield(notice => $nick => "@{[TEAL]}!unapprove@{[NORMAL]}:       Set a user's profile to pending.");
         }
         case "!jeeves" {
             my $message = "Yes, rather. A dreadful situation. I have summoned the gendarmes.";
