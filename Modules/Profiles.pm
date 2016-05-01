@@ -173,7 +173,7 @@ sub unrestricted {
 }
 
 sub view_command {
-    my ($self, $who, $target, @arg) = @_;
+    my ($self, $who, $target, $chanop, @arg) = @_;
     my $profile = $arg[0];
     $self->emit_event('reload_user', $profile);
     my ($nick, $userhost) = split /!/, $who;
@@ -194,7 +194,7 @@ sub view_command {
         my %user = $self->get_user($profile);
         my $possessive = (lc(substr $profile, -1) eq 's' ? $profile . "'" : $profile . "'s" );
         my $state = $user{state};
-        if ($state ne 'approved') {
+        if ($state ne 'approved' && !$chanop) {
             my $message;
             switch ($state) {
                 case "pending" {
@@ -210,7 +210,7 @@ sub view_command {
             $self->emit_event('error_message', $channel_view, $message, $nick);
             return 1;
         }
-        if ($user{restricted} && !defined $self->get_user($nick)) {
+        if ($user{restricted} && !defined $self->get_user($nick) && !$chanop) {
             my $possessive = (lc(substr $profile, -1) eq 's' ? $profile . "'" : $profile . "'s" );
             $message = sprintf('Sorry, %s. %s profile has been restricted to users with profiles only. Create a profile and try again.', $nick, $possessive);
             $self->emit_event('error_message', $channel_view, $message, $nick);

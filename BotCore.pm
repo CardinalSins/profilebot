@@ -201,6 +201,8 @@ sub parse {
     my ($nick, $userhost) = split /!/, $who;
     my @arg = split / /, $what;
     my $command = lc shift @arg;
+    my $poco = $sender->get_heap();
+    my $chanop = $poco->is_channel_operator($self->{options}{botchan}, $nick);
     switch ($command) {
         case "!setup" {
             return if defined $self->get_user($nick);
@@ -272,14 +274,12 @@ sub parse {
             kill URG => $$;
         }
         case "!view" {
-            $self->emit_event('view_command', $nick, $where, @arg);
+            $self->emit_event('view_command', $nick, $where, $chanop, @arg);
         }
         case "!approve" {
             my $victim = shift @arg;
-            my $poco_object = $sender->get_heap();
-            my $val = $poco_object->is_channel_operator($self->{options}{botchan}, $nick);
             my $message;
-            if (!$val) {
+            if (!$chanop) {
                 $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
             }
             else {
@@ -309,10 +309,8 @@ sub parse {
         }
         case "!unapprove" {
             my $victim = shift @arg;
-            my $poco_object = $sender->get_heap();
-            my $val = $poco_object->is_channel_operator($self->{options}{botchan}, $nick);
             my $message;
-            if (!$val) {
+            if (!$chanop) {
                 $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
             }
             else {
@@ -342,10 +340,8 @@ sub parse {
         }
         case "!lock" {
             my $victim = shift @arg;
-            my $poco_object = $sender->get_heap();
-            my $val = $poco_object->is_channel_operator($self->{options}{botchan}, $nick);
             my $message;
-            if (!$val) {
+            if (!$chanop) {
                 $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
             }
             else {
@@ -375,10 +371,8 @@ sub parse {
         }
         case "!delete" {
             my $victim = shift @arg;
-            my $poco_object = $sender->get_heap();
-            my $val = $poco_object->is_channel_operator($self->{options}{botchan}, $nick);
             my $message;
-            if (!$val) {
+            if (!$chanop) {
                 $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
             }
             else {
@@ -403,8 +397,6 @@ sub parse {
         }
         case "!rules" {
             my $victim = shift @arg;
-            my $poco_object = $sender->get_heap();
-            my $val = $poco_object->is_channel_operator($self->{options}{botchan}, $nick);
             my $message = "The rules for $self->{options}{botchan} can be found at $self->{options}{rules_url}";
             my $recipient;
             if ($where eq $self->{IRC}{INFO}{RealNick}) {
@@ -416,8 +408,6 @@ sub parse {
             $self->{IRC}->yield(privmsg => $recipient => $message);
         }
         case "!jeeves" {
-            my $poco_object = $sender->get_heap();
-            my $val = $poco_object->is_channel_operator($self->{options}{botchan}, $nick);
             my $message = "Yes, rather. A dreadful situation. I have summoned the gendarmes.";
             my $recipient;
             if ($where eq $self->{IRC}{INFO}{RealNick}) {
