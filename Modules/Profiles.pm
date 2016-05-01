@@ -69,10 +69,10 @@ sub show_teaser {
     my %user = $self->get_user($nick);
     return unless exists $user{state};
     return unless ($user{state} eq 'approved' || $user{state} eq 'pending'); 
-    my $message = "@{[LIGHT_GREY]}Teaser profile for @{[LIGHT_BLUE]}$nick@{[NORMAL]}: @{[LIGHT_GREY]}Age@{[NORMAL]}: ";
-    $message .= "@{[LIGHT_BLUE]}$user{age}@{[LIGHT_GREY]} Gender Identity@{[NORMAL]}: @{[LIGHT_BLUE]}$user{gender} ";
-    $message .= "@{[LIGHT_GREY]}Orientation@{[NORMAL]}: @{[LIGHT_BLUE]}$user{orientation} @{[LIGHT_GREY]}Role@{[NORMAL]}: ";
-    $message .= "@{[LIGHT_BLUE]}$user{role}@{[LIGHT_GREY]} To see the rest, use @{[BOLD]}@{[LIGHT_BLUE]}!view $nick@{[NORMAL]}.";
+    my $message = "@{[NORMAL]}Teaser profile for @{[LIGHT_BLUE]}$nick@{[NORMAL]}: @{[NORMAL]}Age@{[NORMAL]}: ";
+    $message .= "@{[LIGHT_BLUE]}$user{age}@{[NORMAL]} Gender Identity@{[NORMAL]}: @{[LIGHT_BLUE]}$user{gender} ";
+    $message .= "@{[NORMAL]}Orientation@{[NORMAL]}: @{[LIGHT_BLUE]}$user{orientation} @{[NORMAL]}Role@{[NORMAL]}: ";
+    $message .= "@{[LIGHT_BLUE]}$user{role}@{[NORMAL]} To see the rest, use @{[BOLD]}@{[LIGHT_BLUE]}!view $nick@{[NORMAL]}.";
     $self->debug('The message: ' . $message);
     $self->{IRC}->yield(privmsg => $self->{options}{botchan} => $message);
     $self->{IRC}->yield(mode => "$self->{options}{botchan} +v $nick");
@@ -218,14 +218,14 @@ sub view_command {
             $self->emit_event('error_message', $channel_view, $message, $nick);
             return 1;
         }
-        my $message = "@{[LIGHT_GREY]}Roleplay profile for @{[LIGHT_BLUE]}$user{name}@{[NORMAL]}: @{[LIGHT_GREY]}Age@{[NORMAL]}: ";
-        $message .= "@{[LIGHT_BLUE]}$user{age}@{[LIGHT_GREY]} Gender Identity@{[NORMAL]}: @{[LIGHT_BLUE]}$user{gender} ";
-        $message .= "@{[LIGHT_GREY]}Orientation@{[NORMAL]}: @{[LIGHT_BLUE]}$user{orientation} @{[LIGHT_GREY]}Preferred Role@{[NORMAL]}: ";
-        $message .= "@{[LIGHT_BLUE]}$user{role}@{[LIGHT_GREY]} Location@{[NORMAL]}: @{[LIGHT_BLUE]}$user{location} ";
+        my $message = "@{[NORMAL]}Roleplay profile for @{[LIGHT_BLUE]}$user{name}@{[NORMAL]}: @{[NORMAL]}Age@{[NORMAL]}: ";
+        $message .= "@{[LIGHT_BLUE]}$user{age}@{[NORMAL]} Gender Identity@{[NORMAL]}: @{[LIGHT_BLUE]}$user{gender} ";
+        $message .= "@{[NORMAL]}Orientation@{[NORMAL]}: @{[LIGHT_BLUE]}$user{orientation} @{[NORMAL]}Preferred Role@{[NORMAL]}: ";
+        $message .= "@{[LIGHT_BLUE]}$user{role}@{[NORMAL]} Location@{[NORMAL]}: @{[LIGHT_BLUE]}$user{location} ";
         $self->{IRC}->yield(notice => $nick => $message);
-        $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREY]}Kinks@{[NORMAL]}: @{[LIGHT_BLUE]}$user{kinks}");
-        $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREY]}Limits@{[NORMAL]}: @{[LIGHT_BLUE]}$user{limits}");
-        $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREY]}Description@{[NORMAL]}: @{[LIGHT_BLUE]}$user{description}");
+        $self->{IRC}->yield(notice => $nick => "@{[NORMAL]}Kinks@{[NORMAL]}: @{[LIGHT_BLUE]}$user{kinks}");
+        $self->{IRC}->yield(notice => $nick => "@{[NORMAL]}Limits@{[NORMAL]}: @{[LIGHT_BLUE]}$user{limits}");
+        $self->{IRC}->yield(notice => $nick => "@{[NORMAL]}Description@{[NORMAL]}: @{[LIGHT_BLUE]}$user{description}");
     }
     return 1;
 }
