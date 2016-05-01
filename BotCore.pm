@@ -278,6 +278,7 @@ sub parse {
                 return 1;
             }
             else {
+                $self->emit_event('reload_user', $victim);
                 if (!defined $self->get_user($victim)) {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
@@ -311,6 +312,7 @@ sub parse {
                 return 1;
             }
             else {
+                $self->emit_event('reload_user', $victim);
                 if (!defined $self->get_user($victim)) {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
@@ -344,6 +346,7 @@ sub parse {
                 return 1;
             }
             else {
+                $self->emit_event('reload_user', $victim);
                 if (!defined $self->get_user($victim)) {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
@@ -377,6 +380,7 @@ sub parse {
                 return 1;
             }
             else {
+                $self->emit_event('reload_user', $victim);
                 if (!defined $self->get_user($victim)) {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
