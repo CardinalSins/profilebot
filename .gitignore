@@ -1,3 +1,4 @@
 .irpg.pid
 debug.log
 .config.yaml
+.config.yaml.bak

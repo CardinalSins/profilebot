@@ -237,6 +237,7 @@ sub enter_age {
     my ($self, $nick, $age) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
+    $self->debug(Dumper(\%user));
     $user{age} = $age;
     my $response = sprintf('Thank you. Your age has been set to %s. ', $age);
     if ($user{state} eq 'new') {

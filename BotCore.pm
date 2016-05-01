@@ -81,7 +81,7 @@ sub loadusers {
     $statement->execute();
     while (my $userrow = $statement->fetchrow_hashref()) {
         my %user = %$userrow;
-        %{$self->{users}{$user{name}}} = %user;
+        %{$self->{users}{lc $user{name}}} = %user;
     }
     print "Done!\n";
 }
@@ -114,7 +114,7 @@ sub userpart {
         return unless lc $where eq lc $self->{options}{botchan};
     }
     my ($nick, undef) = split /!/, $who;
-    my %user = $self->get_user($nick);
+    my %user = %{$self->get_user($nick)};
     $user{seen} = time();
     $self->save_user($nick, %user);
     $self->emit_event('part_channel', $nick);
