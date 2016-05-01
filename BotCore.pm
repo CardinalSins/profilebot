@@ -213,7 +213,7 @@ sub parse {
             $user{created} = time();
             $user{seen} = time();
             $user{updated} = time();
-            $user{restricted} = '0';
+            $user{restricted} = '1';
             $self->save_user($nick, %user);
             $self->emit_event('user_created', $nick);
         }
