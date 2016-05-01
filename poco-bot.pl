@@ -19,7 +19,7 @@ use Module::Refresh;
 
 # Thanks to encryptio, a useful tool for debugging parameters: print "$_: $_[$_]\n" for 0 .. $#_; die;
 # Create the component that will represent an IRC network.
-my ($irc) = POE::Component::IRC::State->spawn();
+my ($irc) = POE::Component::IRC::State->spawn(Flood=>1);
 my $BotCore = new BotCore($irc);
 
 $irc->{modrefresh} = Module::Refresh->new();
@@ -80,7 +80,6 @@ sub on_connect {
     $BotCore->{kernel} = $kernel;
     $BotCore->emit_event('connect');
     $irc->yield( join => $opts{botchan} );
-    # $irc->yield( join => $opts{adminchan} );
     print "Connected, going to background\n";
 }
 
