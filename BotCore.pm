@@ -458,7 +458,7 @@ sub parse {
         }
         case "!jeeves" {
             my $message = "Yes, rather. A dreadful situation. I have summoned the gendarmes.";
-            my $helptext = join / /, @arg;
+            my $helptext = join ' ', @arg;
             my $recipient;
             if ($where eq $self->{IRC}{INFO}{RealNick}) {
                 $recipient = $nick;
