@@ -458,6 +458,7 @@ sub parse {
         }
         case "!jeeves" {
             my $message = "Yes, rather. A dreadful situation. I have summoned the gendarmes.";
+            my $helptext = join / /, @arg;
             my $recipient;
             if ($where eq $self->{IRC}{INFO}{RealNick}) {
                 $recipient = $nick;
@@ -466,7 +467,7 @@ sub parse {
                 $recipient = $self->{options}{botchan};
             }
             $self->{IRC}->yield(privmsg => $recipient => $message);
-            $self->{IRC}->yield(notice => $self->{options}{helper_prefix} . $self->{options}{botchan} => "$nick is seeking assistance.");
+            $self->{IRC}->yield(notice => $self->{options}{helper_prefix} . $self->{options}{botchan} => "$nick is seeking assistance: $helptext");
         }
     }
 }
