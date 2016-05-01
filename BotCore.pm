@@ -231,6 +231,7 @@ sub parse {
             else {
                 $recipient = $self->{options}{botchan};
             }
+            $self->{IRC}->yield(privmsg => $recipient => $message)
         }
         case '!info' {
             my $message = "This is PoCoProfileBot v1.0.0, written in less than 48 hours by CardinalSins.";
