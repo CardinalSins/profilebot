@@ -100,10 +100,11 @@ sub mkpass {
 
 sub get_user {
     my ($self, $name) = @_;
-    if (!exists($self->{users}{lc $name})) {
-        return undef;
+    $self->debug('USERS NAME: ' . Dumper(\$self->{users}{lc $name}));
+    if (exists $self->{users}{lc $name} && defined $self->{users}{lc $name}) {
+        return %{$self->{users}{lc $name}};
     }
-    return %{$self->{users}{lc $name}};
+    return undef;
 }
 
 sub save_user {
@@ -136,6 +137,8 @@ sub userjoin {
         return unless lc $where eq lc $self->{options}{botchan};
     }
     my ($nick, undef) = split /!/, $who;
+    $self->emit_event('reload_user', $nick);
+    $self->debug('Joined: ' . Dumper(\$self->{users}{lc $nick}));
     if (defined $self->get_user($nick)) {
         my %user = $self->get_user($nick);
         $user{seen} = time();
