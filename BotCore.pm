@@ -272,6 +272,7 @@ sub parse {
         case "!reload" {
             return unless $nick eq $self->{options}{owner};
             my $message = "Yes, effendi, it shall be done.";
+            my $recipient;
             if ($where eq $self->{IRC}{INFO}{RealNick}) {
                 $recipient = $nick;
             }
