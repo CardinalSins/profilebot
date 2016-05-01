@@ -278,11 +278,11 @@ sub parse {
                 return 1;
             }
             else {
-                if (!defined $self->get_user($nick)) {
+                if (!defined $self->get_user($victim)) {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
                 else {
-                    my %user = $self->get_user($nick);
+                    my %user = $self->get_user($victim);
                     if ($user{state} eq 'approved') {
                         $message = "Approving a profile twice would be the height of folly.";
                     }
@@ -311,11 +311,11 @@ sub parse {
                 return 1;
             }
             else {
-                if (!defined $self->get_user($nick)) {
+                if (!defined $self->get_user($victim)) {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
                 else {
-                    my %user = $self->get_user($nick);
+                    my %user = $self->get_user($victim);
                     if ($user{state} ne 'approved') {
                         $message = "I'm afraid they are quite out of approbation to remove.";
                     }
@@ -344,11 +344,11 @@ sub parse {
                 return 1;
             }
             else {
-                if (!defined $self->get_user($nick)) {
+                if (!defined $self->get_user($victim)) {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
                 else {
-                    my %user = $self->get_user($nick);
+                    my %user = $self->get_user($victim);
                     if ($user{state} eq 'locked') {
                         $message = "I'm worried the key might break if I try to lock that profile again.";
                     }
@@ -377,7 +377,7 @@ sub parse {
                 return 1;
             }
             else {
-                if (!defined $self->get_user($nick)) {
+                if (!defined $self->get_user($victim)) {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
                 else {
