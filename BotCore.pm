@@ -223,7 +223,7 @@ sub parse {
             $self->emit_event('command_age', $nick, $age);
         }
         case '!edit' {
-            my $message = "That command does not exist. Just update the value you want to update.";
+            my $message = "That command does not exist. Just update the value you want to update. Use @{[LIGHT_BLUE]}!profilecommands@{[NORMAL]} to find out how.";
             my $recipient;
             if ($where eq $self->{IRC}{INFO}{RealNick}) {
                 $recipient = $nick;
