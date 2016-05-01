@@ -275,7 +275,6 @@ sub parse {
             my $message;
             if (!$val) {
                 $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
-                return 1;
             }
             else {
                 $self->emit_event('reload_user', $victim);
@@ -309,7 +308,6 @@ sub parse {
             my $message;
             if (!$val) {
                 $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
-                return 1;
             }
             else {
                 $self->emit_event('reload_user', $victim);
@@ -343,7 +341,6 @@ sub parse {
             my $message;
             if (!$val) {
                 $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
-                return 1;
             }
             else {
                 $self->emit_event('reload_user', $victim);
@@ -377,7 +374,6 @@ sub parse {
             my $message;
             if (!$val) {
                 $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
-                return 1;
             }
             else {
                 $self->emit_event('reload_user', $victim);
