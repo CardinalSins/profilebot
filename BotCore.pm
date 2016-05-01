@@ -222,6 +222,16 @@ sub parse {
             my $age = join ' ', @arg;
             $self->emit_event('command_age', $nick, $age);
         }
+        case '!edit' {
+            my $message = "That command does not exist. Just update the value you want to update.";
+            my $recipient;
+            if ($where eq $self->{IRC}{INFO}{RealNick}) {
+                $recipient = $nick;
+            }
+            else {
+                $recipient = $self->{options}{botchan};
+            }
+        }
         case '!info' {
             my $message = "This is PoCoProfileBot v1.0.0, written in less than 48 hours by CardinalSins.";
             my $recipient;
