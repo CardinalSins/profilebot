@@ -82,6 +82,9 @@ sub loadusers {
     while (my $userrow = $statement->fetchrow_hashref()) {
         $self->debug(Dumper(\$userrow));
         my %user = %$userrow;
+        if (!defined $user{orientation}) {
+            $user{orientation} = 'undefined';
+        }
         %{$self->{users}{$user{name}}} = %user;
     }
     print "Done!\n";
