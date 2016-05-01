@@ -94,14 +94,30 @@ sub mkpass {
     return $hasher->hexdigest;
 }
 
+sub get_user {
+    my ($self, $name) = @_;
+    if (!exists($self->{users}{lc $name})) {
+        return undef;
+    }
+    return %{$self->{users}{lc $name}};
+}
+
+sub save_user {
+    my ($self, $name, %data) = @_;
+    %{$self->{users}{lc $name}} = %data;
+}
+
 sub userpart {
     my ($self, $who, $where) = @_[OBJECT, ARG0, ARG1];
     if ($where =~ /^#/) {
         return unless lc $where eq lc $self->{options}{botchan};
     }
     my ($nick, undef) = split /!/, $who;
-    $self->{users}{$nick}{seen} = time();
+    my %user = $self->get_user($nick);
+    $user{seen} = time();
+    $self->save_user($nick, %user);
     $self->emit_event('part_channel', $nick);
+    delete $self->{users}{lc $nick};
     return 1;
 }
 
@@ -111,8 +127,10 @@ sub userjoin {
         return unless lc $where eq lc $self->{options}{botchan};
     }
     my ($nick, undef) = split /!/, $who;
-    if (exists $self->{users}{$nick}) {
-        $self->{users}{$nick}{seen} = time();
+    if (defined $self->get_user($nick)) {
+        my %user = $self->get_user($nick);
+        $user{seen} = time();
+        $self->save_user($nick, %user);
         $self->emit_event('profile_found', $nick);
     }
     $self->emit_event('join_channel', $nick);
@@ -123,7 +141,7 @@ sub userkicked {
     my ($self, $where, $nick) = @_[OBJECT, ARG1, ARG2];
     $self->{users}{$nick}{online} = 0;
     $self->saveuser($nick);
-    delete $self->{users}{$nick};
+    delete $self->{users}{lc $nick};
     return 1;
 }
 
@@ -132,7 +150,7 @@ sub nickchange {
     my ($oldnick, undef) = split /!/, $who;
     $self->emit_event('new_nick', $newnick);
     $self->emit_event('nick_change', $oldnick, $newnick);
-    delete $self->{users}{$oldnick};
+    delete $self->{users}{lc $oldnick};
 }
 
 sub debug {
@@ -173,7 +191,7 @@ sub parse {
     my $command = lc shift @arg;
     switch ($command) {
         case "!setup" {
-            return if exists $self->{users}{$nick};
+            return if defined $self->get_user($nick);
             my %user;
             $user{name} = $nick;
             $user{host} = split /@/, $userhost;
@@ -182,7 +200,7 @@ sub parse {
             $user{seen} = time();
             $user{updated} = time();
             $user{restricted} = '0';
-            %{$self->{users}{$nick}} = %user;
+            $self->save_user($nick, %user);
             $self->emit_event('user_created', $nick);
         }
         case '!age' {
@@ -254,11 +272,11 @@ sub parse {
                 return 1;
             }
             else {
-                if (!exists $self->{users}{$victim}) {
+                if (!defined $self->get_user($nick)) {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
                 else {
-                    my %user = %{$self->{users}{$victim}};
+                    my %user = $self->get_user($nick);
                     if ($user{state} eq 'approved') {
                         $message = "Approving a profile twice would be the height of folly.";
                     }
@@ -287,11 +305,11 @@ sub parse {
                 return 1;
             }
             else {
-                if (!exists $self->{users}{$victim}) {
+                if (!defined $self->get_user($nick)) {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
                 else {
-                    my %user = %{$self->{users}{$victim}};
+                    my %user = $self->get_user($nick);
                     if ($user{state} ne 'approved') {
                         $message = "I'm afraid they are quite out of approbation to remove.";
                     }
@@ -320,11 +338,11 @@ sub parse {
                 return 1;
             }
             else {
-                if (!exists $self->{users}{$victim}) {
+                if (!defined $self->get_user($nick)) {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
                 else {
-                    my %user = %{$self->{users}{$victim}};
+                    my %user = $self->get_user($nick);
                     if ($user{state} eq 'locked') {
                         $message = "I'm worried the key might break if I try to lock that profile again.";
                     }
@@ -353,7 +371,7 @@ sub parse {
                 return 1;
             }
             else {
-                if (!exists $self->{users}{$victim}) {
+                if (!defined $self->get_user($nick)) {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
                 else {

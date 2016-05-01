@@ -40,38 +40,38 @@ sub register_handlers {
 
 sub set_state {
     my ($self, $nick, $state) = @_;
-    return unless exists $self->{users}{$nick};
-    my %victim = %{$self->{users}{$nick}};
+    return unless defined $self->get_user($nick);
+    my %victim = $self->get_user($nick);
     $victim{state} = $state;
-    %{$self->{users}{$nick}} = %victim;
+    $self->save_user($nick, %victim);
     $self->emit_event('user_edited', $nick);
 }
 
 sub check_new_nick {
     my ($self, $old, $new) = @_;
-    if (exists $self->{users}{$old}) {
-        return if exists $self->{users}{$new};
+    if (defined $self->get_user($old)) {
+        return if defined $self->get_user($new);
         $self->{IRC}->yield(mode => $self->{options}{botchan}, '-v', $new);
     }
     else {
-        return unless exists $self->{users}{$new};
+        return unless defined $self->get_user($new);
         $self->{IRC}->yield(mode => $self->{options}{botchan}, '+v', $new);
     }
 }
 
 sub show_teaser {
-    my ($self, $name) = @_;
-    return unless exists $self->{users}{$name};
-    return unless exists $self->{users}{$name}{state};
-    return unless ($self->{users}{$name}{state} eq 'approved' || $self->{users}{$name}{state} eq 'pending'); 
-    my %user = %{$self->{users}{$name}};
-    my $message = "@{[LIGHT_GREY]}Teaser profile for @{[LIGHT_BLUE]}$name@{[NORMAL]}: @{[LIGHT_GREY]}Age@{[NORMAL]}: ";
+    my ($self, $nick) = @_;
+    return unless defined $self->get_user($nick);
+    my %user = $self->get_user($nick);
+    return unless exists $user{state};
+    return unless ($user{state} eq 'approved' || $user{state} eq 'pending'); 
+    my $message = "@{[LIGHT_GREY]}Teaser profile for @{[LIGHT_BLUE]}$nick@{[NORMAL]}: @{[LIGHT_GREY]}Age@{[NORMAL]}: ";
     $message .= "@{[LIGHT_BLUE]}$user{age}@{[LIGHT_GREY]} Gender Identity@{[NORMAL]}: @{[LIGHT_BLUE]}$user{gender} ";
     $message .= "@{[LIGHT_GREY]}Orientation@{[NORMAL]}: @{[LIGHT_BLUE]}$user{orientation} @{[LIGHT_GREY]}Role@{[NORMAL]}: ";
-    $message .= "@{[LIGHT_BLUE]}$user{role}@{[LIGHT_GREY]} To see the rest, use @{[BOLD]}@{[LIGHT_BLUE]}!view $name@{[NORMAL]}.";
+    $message .= "@{[LIGHT_BLUE]}$user{role}@{[LIGHT_GREY]} To see the rest, use @{[BOLD]}@{[LIGHT_BLUE]}!view $nick@{[NORMAL]}.";
     $self->debug('The message: ' . $message);
     $self->{IRC}->yield(privmsg => $self->{options}{botchan} => $message);
-    $self->{IRC}->yield(mode => "$self->{options}{botchan} +v $name");
+    $self->{IRC}->yield(mode => "$self->{options}{botchan} +v $nick");
 }
 
 sub error_message {
@@ -92,14 +92,14 @@ sub error_message {
 
 sub restrict {
     my ($self, $nick, $target) = @_;
-    return unless exists $self->{users}{$nick};
-    my %user = %{$self->{users}{$nick}};
+    return unless defined $self->get_user($nick);
+    my %user = $self->get_user($nick);
     if ($user{restricted} == 1 || $user{restricted} eq '1') {
         $self->emit_event('already_restricted', $nick, $target);
         return 1;
     }
     $user{restricted} = 1;
-    %{$self->{users}{$nick}} = %user;
+    $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
     $self->emit_event('user_restricted', $nick, $target);
 }
@@ -145,14 +145,14 @@ sub already_unrestricted {
 
 sub unrestrict {
     my ($self, $nick, $target) = @_;
-    return unless exists $self->{users}{$nick};
-    my %user = %{$self->{users}{$nick}};
+    return unless defined $self->get_user($nick);
+    my %user = $self->get_user($nick);
     if ($user{restricted} == 0 || $user{restricted} eq '0') {
         $self->emit_event('already_unrestricted', $nick, $target);
         return 1;
     }
     $user{restricted} = 0;
-    %{$self->{users}{$nick}} = %user;
+    $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
     $self->emit_event('user_unrestricted', $nick, $target);
 }
@@ -183,14 +183,13 @@ sub view_command {
     else {
         $channel_view = 1;
     }
-    my %profiles = %{$self->{users}};
-    if (!exists $profiles{$profile}) {
+    if (!defined $self->get_user($profile)) {
         $message = sprintf('Sorry, %s, no profile found under %s. Try a different name.', $nick, $profile);
         $self->emit_event('error_message', $channel_view, $message, $nick);
         return 1;
     }
     else {
-        my %user = %{$self->{users}{$profile}};
+        my %user = $self->get_user($profile);
         my $possessive = (lc(substr $profile, -1) eq 's' ? $profile . "'" : $profile . "'s" );
         my $state = $user{state};
         if ($state ne 'approved') {
@@ -209,13 +208,13 @@ sub view_command {
             $self->emit_event('error_message', $channel_view, $message, $nick);
             return 1;
         }
-        if ($user{restricted} && !exists($self->{users}{$nick})) {
+        if ($user{restricted} && !defined $self->get_user($nick)) {
             my $possessive = (lc(substr $profile, -1) eq 's' ? $profile . "'" : $profile . "'s" );
             $message = sprintf('Sorry, %s. %s profile has been restricted to users with profiles only. Create a profile and try again.', $nick, $possessive);
             $self->emit_event('error_message', $channel_view, $message, $nick);
             return 1;
         }
-        my $message = "@{[LIGHT_GREY]}Roleplay profile for @{[LIGHT_BLUE]}$profile@{[NORMAL]}: @{[LIGHT_GREY]}Age@{[NORMAL]}: ";
+        my $message = "@{[LIGHT_GREY]}Roleplay profile for @{[LIGHT_BLUE]}$user{name}@{[NORMAL]}: @{[LIGHT_GREY]}Age@{[NORMAL]}: ";
         $message .= "@{[LIGHT_BLUE]}$user{age}@{[LIGHT_GREY]} Gender Identity@{[NORMAL]}: @{[LIGHT_BLUE]}$user{gender} ";
         $message .= "@{[LIGHT_GREY]}Orientation@{[NORMAL]}: @{[LIGHT_BLUE]}$user{orientation} @{[LIGHT_GREY]}Preferred Role@{[NORMAL]}: ";
         $message .= "@{[LIGHT_BLUE]}$user{role}@{[LIGHT_GREY]} Location@{[NORMAL]}: @{[LIGHT_BLUE]}$user{location} ";
@@ -236,8 +235,8 @@ sub start_interview {
 
 sub enter_age {
     my ($self, $nick, $age) = @_;
-    return unless exists $self->{users}{$nick};
-    my %user = %{$self->{users}{$nick}};
+    return unless defined $self->get_user($nick);
+    my %user = $self->get_user($nick);
     $user{age} = $age;
     my $response = sprintf('Thank you. Your age has been set to %s. ', $age);
     if ($user{state} eq 'new') {
@@ -247,14 +246,14 @@ sub enter_age {
         $user{state} = 'aged';
     }
     $self->{IRC}->yield(privmsg => $nick => $response);
-    %{$self->{users}{$nick}} = %user;
+    $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
 }
 
 sub enter_gender {
     my ($self, $nick, $gender) = @_;
-    return unless exists $self->{users}{$nick};
-    my %user = %{$self->{users}{$nick}};
+    return unless defined $self->get_user($nick);
+    my %user = $self->get_user($nick);
     $user{gender} = $gender;
     my $response = sprintf('Thank you. Your gender identity has been set to %s. ', $gender);
     if ($user{state} eq 'aged') {
@@ -263,14 +262,14 @@ sub enter_gender {
         $user{state} = 'gendered';
     }
     $self->{IRC}->yield(privmsg => $nick => $response);
-    %{$self->{users}{$nick}} = %user;
+    $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
 }
 
 sub enter_orientation {
     my ($self, $nick, $orientation) = @_;
-    return unless exists $self->{users}{$nick};
-    my %user = %{$self->{users}{$nick}};
+    return unless defined $self->get_user($nick);
+    my %user = $self->get_user($nick);
     $user{orientation} = $orientation;
     my $response = sprintf('Thank you. Your orientation has been set to %s. ', $orientation);
     if ($user{state} eq 'gendered') {
@@ -279,14 +278,14 @@ sub enter_orientation {
         $user{state} = 'oriented';
     }
     $self->{IRC}->yield(privmsg => $nick => $response);
-    %{$self->{users}{$nick}} = %user;
+    $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
 }
 
 sub enter_limits {
     my ($self, $nick, $limits) = @_;
-    return unless exists $self->{users}{$nick};
-    my %user = %{$self->{users}{$nick}};
+    return unless defined $self->get_user($nick);
+    my %user = $self->get_user($nick);
     $user{limits} = $limits;
     my $response = sprintf('Thank you. Your limits have been set to %s. ', $limits);
     if ($user{state} eq 'oriented') {
@@ -295,14 +294,14 @@ sub enter_limits {
         $user{state} = 'limited';
     }
     $self->{IRC}->yield(privmsg => $nick => $response);
-    %{$self->{users}{$nick}} = %user;
+    $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
 }
 
 sub enter_kinks {
     my ($self, $nick, $kinks) = @_;
-    return unless exists $self->{users}{$nick};
-    my %user = %{$self->{users}{$nick}};
+    return unless defined $self->get_user($nick);
+    my %user = $self->get_user($nick);
     $user{kinks} = $kinks;
     my $response = sprintf('Thank you. Your kinks have been set to %s. ', $kinks);
     if ($user{state} eq 'limited') {
@@ -312,14 +311,14 @@ sub enter_kinks {
         $user{state} = 'kinked';
     }
     $self->{IRC}->yield(privmsg => $nick => $response);
-    %{$self->{users}{$nick}} = %user;
+    $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
 }
 
 sub enter_role {
     my ($self, $nick, $role) = @_;
-    return unless exists $self->{users}{$nick};
-    my %user = %{$self->{users}{$nick}};
+    return unless defined $self->get_user($nick);
+    my %user = $self->get_user($nick);
     $user{role} = $role;
     my $response = sprintf('Thank you. Your role has been set to %s.', $role);
     if ($user{state} eq 'kinked') {
@@ -329,14 +328,14 @@ sub enter_role {
         $user{state} = 'roled';
     }
     $self->{IRC}->yield(privmsg => $nick => $response);
-    %{$self->{users}{$nick}} = %user;
+    $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
 }
 
 sub enter_location {
     my ($self, $nick, $location) = @_;
-    return unless exists $self->{users}{$nick};
-    my %user = %{$self->{users}{$nick}};
+    return unless defined $self->get_user($nick);
+    my %user = $self->get_user($nick);
     $user{location} = $location;
     my $response = sprintf('Thank you. Your location has been set to %s.', $location);
     if ($user{state} eq 'roled') {
@@ -345,14 +344,14 @@ sub enter_location {
         $user{state} = 'located';
     }
     $self->{IRC}->yield(privmsg => $nick => $response);
-    %{$self->{users}{$nick}} = %user;
+    $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
 }
 
 sub enter_description {
     my ($self, $nick, $description) = @_;
-    return unless exists $self->{users}{$nick};
-    my %user = %{$self->{users}{$nick}};
+    return unless defined $self->get_user($nick);
+    my %user = $self->get_user($nick);
     $user{description} = $description;
     my $response = sprintf('Thank you. Your description has been set to %s.', $description);
     if ($user{state} eq 'located') {
@@ -360,7 +359,7 @@ sub enter_description {
         $response .= " We're all done here. Happy perving!";
     }
     $self->{IRC}->yield(privmsg => $nick => $response);
-    %{$self->{users}{$nick}} = %user;
+    $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
     my $message = sprintf('%s has created a profile for your viewing pleasure!', $nick);
     $self->{IRC}->yield(privmsg => $self->{options}{botchan} => $message);

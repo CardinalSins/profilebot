@@ -20,16 +20,11 @@ sub register_handlers {
     $BotCore->register_handler('reload_user', \&BotCore::Modules::Database::find_user);
 }
 
-sub join_channel {
-    my ($self, $nick) = @_;
-    return unless defined $self->{users}{$nick};
-}
-
 sub new_user {
     my $self = shift;
     my $nick = shift;
-    return unless exists $self->{users}{$nick};
-    my %user = %{$self->{users}{$nick}};
+    return unless defined $self->get_user($nick);
+    my %user = $self->get_user($nick);
     my $dbh = $self->{DBH};
     my $query = "INSERT INTO user (name, age, gender, orientation, role, location, kinks, limits, description, restricted, host, state, created, updated, seen) ";
     $query .= "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -49,7 +44,7 @@ sub new_user {
     $query .= "updated=VALUES(updated), ";
     $query .= "seen=VALUES(seen)";
     my $statement = $dbh->prepare($query);
-    $statement->execute($nick,
+    $statement->execute($user{name},
                         $user{age},
                         $user{gender},
                         $user{orientation},
@@ -77,7 +72,7 @@ sub loaduser {
     my $row = $statement->fetchrow_hashref() or return 1;
     my %user = %{$row};
     $self->debug("$username loaded.");
-    %{$self->{users}{$user{name}}} = %user;
+    %{$self->{users}{lc $user{name}}} = %user;
     return 1;
 }
 
@@ -86,12 +81,12 @@ sub find_user {
     my $username = shift;
     my $dbh = $self->{DBH};
     $self->debug("Loading user $username.");
-    my $statement = $dbh->prepare("SELECT id, name, age, gender, orientation, role, location, kinks, limits, description, restricted, host, state, created, updated, seen FROM user WHERE name = ?");
+    my $statement = $dbh->prepare("SELECT id, name, age, gender, orientation, role, location, kinks, limits, description, restricted, host, state, created, updated, seen FROM user WHERE name LIKE ?");
     $statement->execute($username);
     my $row = $statement->fetchrow_hashref() or return 1;
     my %user = %{$row};
     $self->debug("$username loaded.");
-    %{$self->{users}{$user{name}}} = %user;
+    %{$self->{users}{lc $user{name}}} = %user;
     return 1;
 }
 
@@ -99,7 +94,7 @@ sub saveuser {
     my $self = shift;
     my $nick = shift;
     $self->debug("Saving $nick");
-    my %user = %{$self->{users}{$nick}};
+    my %user = $self->get_user($nick);
     my $dbh = $self->{DBH};
     my $query = "UPDATE user SET age = ?, gender = ?, orientation = ?, role = ?, location = ?, kinks = ?, ";
     $query .= "limits = ?, description = ?, restricted = ?, host = ?, state = ?, seen = ?, updated = ? WHERE name = ? LIMIT 1";
