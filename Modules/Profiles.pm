@@ -53,10 +53,12 @@ sub check_new_nick {
     my ($self, $old, $new) = @_;
     if (defined $self->get_user($old)) {
         return if defined $self->get_user($new);
+        return unless $self->{users}{lc $new}{state} eq 'approved';
         $self->{IRC}->yield(mode => $self->{options}{botchan}, '-v', $new);
     }
     else {
         return unless defined $self->get_user($new);
+        return unless $self->{users}{lc $new}{state} eq 'approved';
         $self->{IRC}->yield(mode => $self->{options}{botchan}, '+v', $new);
     }
 }
@@ -210,9 +212,9 @@ sub view_command {
             $self->emit_event('error_message', $channel_view, $message, $nick);
             return 1;
         }
-        if ($user{restricted} && !defined $self->get_user($nick) && !$chanop) {
+        if ($user{restricted} && (!defined $self->get_user($nick) || $self->{users}{lc $nick}{state} ne 'approved') && !$chanop) {
             my $possessive = (lc(substr $profile, -1) eq 's' ? $profile . "'" : $profile . "'s" );
-            $message = sprintf('Sorry, %s. %s profile has been restricted to users with profiles only. Create a profile and try again.', $nick, $possessive);
+            $message = sprintf('Sorry, %s. %s profile has been restricted to users with approved profiles only. Create a profile or get yours approved by the ops and try again.', $nick, $possessive);
             $self->emit_event('error_message', $channel_view, $message, $nick);
             return 1;
         }

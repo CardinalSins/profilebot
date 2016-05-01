@@ -269,9 +269,16 @@ sub parse {
             my $description = join ' ', @arg;
             $self->emit_event('command_unrestrict', $nick);
         }
-        case "reload" {
+        case "!reload" {
             return unless $nick eq $self->{options}{owner};
-            $irc->yield(privmsg => $nick => "Yes, effendi, it shall be done.");
+            my $message = "Yes, effendi, it shall be done.";
+            if ($where eq $self->{IRC}{INFO}{RealNick}) {
+                $recipient = $nick;
+            }
+            else {
+                $recipient = $self->{options}{botchan};
+            }
+            $self->{IRC}->yield(privmsg => $recipient => $message);
             kill URG => $$;
         }
         case "!view" {
@@ -296,6 +303,7 @@ sub parse {
                     else {
                         $message = "Very well, I shall notify the appropriate authorities.";
                         $self->emit_event('modify_state', $victim, 'approved');
+                        $self->{IRC}->yield(mode => $self->{options}{botchan} => '+v' => $victim);
                     }
                 }
             }
@@ -327,6 +335,7 @@ sub parse {
                     else {
                         $message = "Very well, I shall notify the appropriate authorities.";
                         $self->emit_event('modify_state', $victim, 'pending');
+                        $self->{IRC}->yield(mode => $self->{options}{botchan}, '-v', $victim);
                     }
                 }
             }
