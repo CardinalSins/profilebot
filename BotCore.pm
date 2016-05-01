@@ -80,8 +80,9 @@ sub loadusers {
     my $statement = $dbh->prepare("SELECT id, name, age, gender, orientation, role, location, kinks, limits, description, state, restricted, host, created, updated, seen FROM user");
     $statement->execute();
     while (my $userrow = $statement->fetchrow_hashref()) {
+        $self->debug(Dumper(\$userrow));
         my %user = %$userrow;
-        %{$self->{users}{lc $user{name}}} = %user;
+        %{$self->{users}{$user{name}}} = %user;
     }
     print "Done!\n";
 }
@@ -96,7 +97,6 @@ sub mkpass {
 
 sub get_user {
     my ($self, $name) = @_;
-    $self->emit_event('reload_user', $name);
     if (!exists($self->{users}{lc $name})) {
         return undef;
     }
@@ -105,7 +105,12 @@ sub get_user {
 
 sub save_user {
     my ($self, $name, %data) = @_;
+    $self->debug('save_user');
+    $self->debug('Incoming: ' . Dumper(\%data));
+    $self->debug('Current: ' . Dumper(\$self->{users}{lc $name}));
     %{$self->{users}{lc $name}} = %data;
+    $self->debug('Updated: ' . Dumper(\$self->{users}{lc $name}));
+    $self->debug('saved_user');
 }
 
 sub userpart {
@@ -114,7 +119,7 @@ sub userpart {
         return unless lc $where eq lc $self->{options}{botchan};
     }
     my ($nick, undef) = split /!/, $who;
-    my %user = %{$self->get_user($nick)};
+    my %user = $self->get_user($nick);
     $user{seen} = time();
     $self->save_user($nick, %user);
     $self->emit_event('part_channel', $nick);

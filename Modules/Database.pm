@@ -71,6 +71,7 @@ sub new_user {
                         time(),
                         time(),
                         time());
+    $self->emit_event('reload_user', $nick);
     return 1;
 }
 
@@ -109,12 +110,14 @@ sub saveuser {
     my %user = $self->get_user($nick);
     my $dbh = $self->{DBH};
     my $query = "UPDATE user SET age = ?, gender = ?, orientation = ?, role = ?, location = ?, kinks = ?, ";
-    $query .= "limits = ?, description = ?, restricted = ?, host = ?, state = ?, seen = ?, updated = ? WHERE name = ? LIMIT 1";
+    $query .= "limits = ?, description = ?, restricted = ?, host = ?, state = ?, seen = ?, updated = ? WHERE id = $user{id} LIMIT 1";
+    $self->debug($query);
+    $self->debug(Dumper(\%user));
     my $statement = $dbh->prepare($query) or do{ print $!; die;};
     $statement->execute($user{age}, $user{gender}, $user{orientation}, $user{role},
                         $user{location}, $user{kinks}, $user{limits}, $user{description},
-                        $user{restricted}, $user{host}, $user{state}, time(), time(),
-                        $user{name});
+                        $user{restricted}, $user{host}, $user{state}, time(), time()) or do{ $self->debug($!); };
+    $self->emit_event('reload_user', $nick);
     $self->debug("$nick saved.");
     return 1;
 }

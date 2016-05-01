@@ -41,9 +41,11 @@ sub register_handlers {
 sub set_state {
     my ($self, $nick, $state) = @_;
     return unless defined $self->get_user($nick);
+    $self->debug("Setting state for $nick to $state.");
     my %victim = $self->get_user($nick);
     $victim{state} = $state;
     $self->save_user($nick, %victim);
+    $self->debug(Dumper(\$self->{users}{lc $nick}));
     $self->emit_event('user_edited', $nick);
 }
 
@@ -263,6 +265,7 @@ sub enter_gender {
         $user{state} = 'gendered';
     }
     $self->{IRC}->yield(privmsg => $nick => $response);
+    $self->debug('Sending: ' . Dumper(\%user));
     $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
 }
@@ -309,8 +312,9 @@ sub enter_kinks {
         $response .= 'Now enter your preferred role using !role. ';
         $response .= 'This can be what role you prefer within BDSM; e.g. !role top, or !role masochist. ';
         $response .= 'Alternatively, you can list the type of character you tend to roleplay, e.g. !role Roman legionnaire or !role Comic book superhero. ';
-        $user{state} = 'kinked';
+        $user{state} = 'kinky';
     }
+    $self->debug('Postk: ' . Dumper(\%user));
     $self->{IRC}->yield(privmsg => $nick => $response);
     $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
@@ -320,14 +324,16 @@ sub enter_role {
     my ($self, $nick, $role) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
+    $self->debug('Prer: ' . Dumper(\%user));
     $user{role} = $role;
     my $response = sprintf('Thank you. Your role has been set to %s.', $role);
-    if ($user{state} eq 'kinked') {
+    if ($user{state} eq 'kinky') {
         $response .= ' Now enter a location using !location. ';
         $response .= 'You can use actual locations, like London or Seattle. You can use fictional locations, like Minas Tirith or Draenor. ';
         $response .= 'You can even use conceptual locations, like In a State of Confusion.';
         $user{state} = 'roled';
     }
+    $self->debug('Postr: ' . Dumper(\%user));
     $self->{IRC}->yield(privmsg => $nick => $response);
     $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
