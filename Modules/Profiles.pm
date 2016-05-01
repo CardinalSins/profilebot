@@ -220,9 +220,9 @@ sub view_command {
         $message .= "@{[LIGHT_GREY]}Orientation@{[NORMAL]}: @{[LIGHT_BLUE]}$user{orientation} @{[LIGHT_GREY]}Preferred Role@{[NORMAL]}: ";
         $message .= "@{[LIGHT_BLUE]}$user{role}@{[LIGHT_GREY]} Location@{[NORMAL]}: @{[LIGHT_BLUE]}$user{location} ";
         $self->{IRC}->yield(notice => $nick => $message);
-        $self->{IRC}->yield(notice => $nick => sprintf('Kinks: %s', $user{kinks}));
-        $self->{IRC}->yield(notice => $nick => sprintf('Limits: %s', $user{limits}));
-        $self->{IRC}->yield(notice => $nick => sprintf('Description: %s', $user{description}));
+        $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREY]}Kinks@{[NORMAL]}: @{[LIGHT_BLUE]}$user{kinks}");
+        $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREY]}Limits@{[NORMAL]}: @{[LIGHT_BLUE]}$user{limits}");
+        $self->{IRC}->yield(notice => $nick => "@{[LIGHT_GREY]}Description@{[NORMAL]}: @{[LIGHT_BLUE]}$user{description}");
     }
     return 1;
 }

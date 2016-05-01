@@ -17,7 +17,7 @@ sub register_handlers {
     $BotCore->register_handler('new_nick', \&BotCore::Modules::Database::loaduser);
     $BotCore->register_handler('user_created', \&BotCore::Modules::Database::new_user);
     $BotCore->register_handler('user_edited', \&BotCore::Modules::Database::saveuser);
-    $BotCore->register_handler('reload_user', \&BotCore::Modules::Database::loaduser);
+    $BotCore->register_handler('reload_user', \&BotCore::Modules::Database::find_user);
 }
 
 sub join_channel {
@@ -68,6 +68,20 @@ sub new_user {
 }
 
 sub loaduser {
+    my $self = shift;
+    my $username = shift;
+    my $dbh = $self->{DBH};
+    $self->debug("Loading user $username.");
+    my $statement = $dbh->prepare("SELECT id, name, age, gender, orientation, role, location, kinks, limits, description, restricted, host, state, created, updated, seen FROM user WHERE name = ?");
+    $statement->execute($username);
+    my $row = $statement->fetchrow_hashref() or return 1;
+    my %user = %{$row};
+    $self->debug("$username loaded.");
+    %{$self->{users}{$user{name}}} = %user;
+    return 1;
+}
+
+sub find_user {
     my $self = shift;
     my $username = shift;
     my $dbh = $self->{DBH};

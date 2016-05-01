@@ -343,6 +343,62 @@ sub parse {
             }
             $self->{IRC}->yield(privmsg => $recipient => $message);
         }
+        case "!lock" {
+            my $victim = shift @arg;
+            my $poco_object = $sender->get_heap();
+            my $val = $poco_object->is_channel_operator($self->{options}{botchan}, $nick);
+            my $message;
+            if (!$val) {
+                $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
+                return 1;
+            }
+            else {
+                if (!exists $self->{users}{$victim}) {
+                    $message = "Oh dear, I'm afraid I simply can't find that profile.";
+                }
+                else {
+                    $message = "As you wish. I shall see them to the door.";
+                    $self->emit_event('delete_user', $victim);
+                    delete $self->{users}{$victim};
+                }
+            }
+            my $recipient;
+            if ($where eq $self->{IRC}{INFO}{RealNick}) {
+                $recipient = $nick;
+            }
+            else {
+                $recipient = $self->{options}{botchan};
+            }
+            $self->{IRC}->yield(privmsg => $recipient => $message);
+        }
+        case "!rules" {
+            my $victim = shift @arg;
+            my $poco_object = $sender->get_heap();
+            my $val = $poco_object->is_channel_operator($self->{options}{botchan}, $nick);
+            my $message = "The rules for $self->{options}{botchan} can be found at $self->{options}{rules_url}";
+            my $recipient;
+            if ($where eq $self->{IRC}{INFO}{RealNick}) {
+                $recipient = $nick;
+            }
+            else {
+                $recipient = $self->{options}{botchan};
+            }
+            $self->{IRC}->yield(privmsg => $recipient => $message);
+        }
+        case "!jeeves" {
+            my $poco_object = $sender->get_heap();
+            my $val = $poco_object->is_channel_operator($self->{options}{botchan}, $nick);
+            my $message = "Yes, rather. A dreadful situation. I have summoned the gendarmes.";
+            my $recipient;
+            if ($where eq $self->{IRC}{INFO}{RealNick}) {
+                $recipient = $nick;
+            }
+            else {
+                $recipient = $self->{options}{botchan};
+            }
+            $self->{IRC}->yield(privmsg => $recipient => $message);
+            $self->{IRC}->yield(notice => $self->{options}{helper_prefix} . $self->{options}{botchan} => "$nick is seeking assistance.");
+        }
     }
 }
 1;
