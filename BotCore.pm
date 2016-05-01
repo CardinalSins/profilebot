@@ -85,7 +85,7 @@ sub loadusers {
         if (!defined $user{orientation}) {
             $user{orientation} = 'undefined';
         }
-        %{$self->{users}{$user{name}}} = %user;
+        %{$self->{users}{lc $user{name}}} = %user;
     }
     print "Done!\n";
 }

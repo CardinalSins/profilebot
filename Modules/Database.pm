@@ -84,6 +84,9 @@ sub loaduser {
     $statement->execute($username);
     my $row = $statement->fetchrow_hashref() or return 1;
     my %user = %{$row};
+    if (!defined $user{orientation}) {
+        $user{orientation} = 'undefined';
+    }
     $self->debug("$username loaded.");
     %{$self->{users}{lc $user{name}}} = %user;
     return 1;
