@@ -7,6 +7,7 @@ use Data::Dumper;
 use Switch;
 use POE;
 use YAML;
+use JSON;
 use IRC::Utils qw(NORMAL BOLD UNDERLINE REVERSE ITALIC FIXED WHITE BLACK BLUE GREEN RED BROWN PURPLE ORANGE YELLOW LIGHT_GREEN TEAL LIGHT_CYAN LIGHT_BLUE PINK GREY LIGHT_GREY);
 
 $Data::Dumper::Indent = 1;
@@ -65,11 +66,29 @@ sub emit_event {
 sub readconfig {
     print "Loading options... ";
     my $self = shift;
+    if (! -e ".config.json") {
+        print("Error: Cannot find .config.yaml. Copy it to this directory, please.",1);
+    }
+    else {
+        my $config;
+        open (my FH, '<.config.json');
+        while (<FH>) {
+            $config .= $_;
+        }
+        $self->{options} = decode_json($config);
+    }
+    print "Done!\n";
+}
+
+sub saveconfig {
+    print "Saving options... ";
+    my ($self, %options) = @_;
     if (! -e ".config.yaml") {
         print("Error: Cannot find .config.yaml. Copy it to this directory, please.",1);
     }
     else {
-        $self->{options} = YAML::LoadFile(".config.yaml");
+        YAML::DumpFile(".config.yaml", %options);
+        $self->readconfig();
     }
     print "Done!\n";
 }
@@ -196,20 +215,9 @@ sub parse {
     my $command = lc shift @arg;
     my $poco = $sender->get_heap();
     my $chanop = $poco->is_channel_operator($self->{options}{botchan}, $nick);
+    return if $nick ~= /^(Cuff\d+|Guest\d+|Perv\d+|mib_.+)/;
+    $self->emit_event("user_command $command", $nick, $chanop, $where, $command, @arg);
     switch ($command) {
-        case "!setup" {
-            return if defined $self->get_user($nick);
-            my %user;
-            $user{name} = $nick;
-            $user{host} = split /@/, $userhost;
-            $user{state} = 'new';
-            $user{created} = time();
-            $user{seen} = time();
-            $user{updated} = time();
-            $user{restricted} = '1';
-            $self->save_user($nick, %user);
-            $self->emit_event('user_created', $nick);
-        }
         case '!age' {
             my $age = join ' ', @arg;
             $self->emit_event('command_age', $nick, $age);
@@ -305,7 +313,7 @@ sub parse {
                         $message = "Approving a profile twice would be the height of folly.";
                     }
                     else {
-                        $message = "Very well, I shall notify the appropriate authorities.";
+                        $message = "As you wish, I will sneer at them with slightly less contempt in the future.";
                         $self->emit_event('modify_state', $victim, 'approved');
                         $self->{IRC}->yield(mode => $self->{options}{botchan} => '+v' => $victim);
                     }
@@ -337,7 +345,7 @@ sub parse {
                         $message = "I'm afraid they are quite out of approbation to remove.";
                     }
                     else {
-                        $message = "Very well, I shall notify the appropriate authorities.";
+                        $message = "Excellent choice. They are quite the rascal, are they not?";
                         $self->emit_event('modify_state', $victim, 'pending');
                         $self->{IRC}->yield(mode => $self->{options}{botchan}, '-v', $victim);
                     }
@@ -369,7 +377,7 @@ sub parse {
                         $message = "I'm worried the key might break if I try to lock that profile again.";
                     }
                     else {
-                        $message = "Very well, I shall notify the appropriate authorities.";
+                        $message = "I've notified General Farthingworth that $victim is to be held incommunicado until further notice.";
                         $self->emit_event('modify_state', $victim, 'locked');
                     }
                 }
@@ -395,7 +403,7 @@ sub parse {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
                 else {
-                    $message = "As you wish. I shall see them to the door.";
+                    $message = "Splendid, I shall see them to the door post haste.";
                     $self->emit_event('delete_user', $victim);
                     delete $self->{users}{lc $victim};
                 }

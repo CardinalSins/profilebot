@@ -33,7 +33,7 @@ sub register_handlers {
     $BotCore->register_handler('command_kinks', \&BotCore::Modules::Profiles::enter_kinks);
     $BotCore->register_handler('command_limits', \&BotCore::Modules::Profiles::enter_limits);
     $BotCore->register_handler('command_description', \&BotCore::Modules::Profiles::enter_description);
-    $BotCore->register_handler('command_setup', \&BotCore::Modules::Profiles::command_setup);
+    $BotCore->register_handler('channel_command !setup', \&BotCore::Modules::Profiles::command_setup);
     $BotCore->register_handler('already_restricted', \&BotCore::Modules::Profiles::already_restricted);
     $BotCore->register_handler('already_unrestricted', \&BotCore::Modules::Profiles::already_unrestricted);
 }

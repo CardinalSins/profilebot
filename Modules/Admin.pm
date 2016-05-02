@@ -13,23 +13,18 @@ sub new {
 
 sub register_handlers {
     my ($self, $BotCore) = @_;
-    $BotCore->register_handler('irc_command !config_option', \&BotCore::Modules::Admin::config_option);
+    $BotCore->register_handler('user_command !config', \&BotCore::Modules::Admin::config_option);
 }
 
 sub config_option {
-    my ($self, %options) = @_;
-    return 1;
-    $self->debug(Dumper(\%options));
-    my @arg = split ' ', $options{what};
-    my $command = lc shift @arg;
+    my ($self, $nick, $chanop, $target, $command, @arg) = @_;
     my $config_option = shift @arg;
     my $config_value = join ' ', @arg;
     my %new_opts = %{$self->{options}};
+    $self->debug('Old: ' . Dumper(\%new_opts));
     $new_opts{$config_option} = $config_value;
-    %{$self->{options}} = %new_opts;
-    my %option = ( $config_option => $config_value );
-    $self->saveconfig();
-    # $self->debug(Dumper(\%option));
+    $self->debug('New: ' . Dumper(\%new_opts));
+    $self->saveconfig(%new_opts);
     return 1;
 }
 1;
