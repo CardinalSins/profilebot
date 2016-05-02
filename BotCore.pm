@@ -152,8 +152,6 @@ sub userjoin {
 
 sub userkicked {
     my ($self, $where, $nick) = @_[OBJECT, ARG1, ARG2];
-    $self->{users}{$nick}{online} = 0;
-    $self->saveuser($nick);
     delete $self->{users}{lc $nick};
     return 1;
 }
