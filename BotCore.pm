@@ -52,7 +52,7 @@ sub register_handler {
 sub emit_event {
     my ($self, $event, @params) = @_;
     if (!$self->{events}{$event}) {
-        $self->debug("No handler defined for event: $event");
+        $self->debug("Event $event triggered but no handler defined.");
         return;
     }
     my @handlers = @{$self->{events}{$event}};
@@ -81,7 +81,6 @@ sub loadusers {
     my $statement = $dbh->prepare("SELECT id, name, age, gender, orientation, role, location, kinks, limits, description, state, restricted, host, created, updated, seen FROM user");
     $statement->execute();
     while (my $userrow = $statement->fetchrow_hashref()) {
-        $self->debug(Dumper(\$userrow));
         my %user = %$userrow;
         if (!defined $user{orientation}) {
             $user{orientation} = 'undefined';
@@ -101,7 +100,6 @@ sub mkpass {
 
 sub get_user {
     my ($self, $name) = @_;
-    $self->debug('USERS NAME: ' . Dumper(\$self->{users}{lc $name}));
     if (exists $self->{users}{lc $name} && defined $self->{users}{lc $name}) {
         return %{$self->{users}{lc $name}};
     }
@@ -110,12 +108,7 @@ sub get_user {
 
 sub save_user {
     my ($self, $name, %data) = @_;
-    $self->debug('save_user');
-    $self->debug('Incoming: ' . Dumper(\%data));
-    $self->debug('Current: ' . Dumper(\$self->{users}{lc $name}));
     %{$self->{users}{lc $name}} = %data;
-    $self->debug('Updated: ' . Dumper(\$self->{users}{lc $name}));
-    $self->debug('saved_user');
 }
 
 sub userpart {
@@ -139,7 +132,6 @@ sub userjoin {
     }
     my ($nick, undef) = split /!/, $who;
     $self->emit_event('reload_user', $nick);
-    $self->debug('Joined: ' . Dumper(\$self->{users}{lc $nick}));
     if (defined $self->get_user($nick)) {
         my %user = $self->get_user($nick);
         $user{seen} = time();
