@@ -25,7 +25,6 @@ sub authenticate {
     for my $key (@tpl_vars) {
         $authcommand =~ s/<$key>/$self->{options}{services}{template_values}{$key}/;
     }
-    $self->debug("Running command privmsg $self->{options}{services}{auth_command} with params $authcommand");
     $self->{IRC}->yield(privmsg => $self->{options}{services}{auth_command} => $authcommand);
     return 1;
 }

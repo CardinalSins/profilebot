@@ -79,7 +79,7 @@ sub loaduser {
     my $self = shift;
     my $username = shift;
     my $dbh = $self->{DBH};
-    $self->debug("Loading user $username.");
+    $self->debug("Loading user $username LU.");
     my $statement = $dbh->prepare("SELECT id, name, age, gender, orientation, role, location, kinks, limits, description, restricted, host, state, created, updated, seen FROM user WHERE name = ?");
     $statement->execute($username);
     my $row = $statement->fetchrow_hashref() or return 1;
@@ -96,7 +96,7 @@ sub find_user {
     my $self = shift;
     my $username = shift;
     my $dbh = $self->{DBH};
-    $self->debug("Loading user $username.");
+    $self->debug("Loading user $username FU.");
     my $statement = $dbh->prepare("SELECT id, name, age, gender, orientation, role, location, kinks, limits, description, restricted, host, state, created, updated, seen FROM user WHERE name LIKE ?");
     $statement->execute($username);
     my $row = $statement->fetchrow_hashref() or return 1;
@@ -114,8 +114,6 @@ sub saveuser {
     my $dbh = $self->{DBH};
     my $query = "UPDATE user SET age = ?, gender = ?, orientation = ?, role = ?, location = ?, kinks = ?, ";
     $query .= "limits = ?, description = ?, restricted = ?, host = ?, state = ?, seen = ?, updated = ? WHERE id = $user{id} LIMIT 1";
-    $self->debug($query);
-    $self->debug(Dumper(\%user));
     my $statement = $dbh->prepare($query) or do{ print $!; die;};
     $statement->execute($user{age}, $user{gender}, $user{orientation}, $user{role},
                         $user{location}, $user{kinks}, $user{limits}, $user{description},

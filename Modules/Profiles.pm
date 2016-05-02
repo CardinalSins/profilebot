@@ -41,11 +41,9 @@ sub register_handlers {
 sub set_state {
     my ($self, $nick, $state) = @_;
     return unless defined $self->get_user($nick);
-    $self->debug("Setting state for $nick to $state.");
     my %victim = $self->get_user($nick);
     $victim{state} = $state;
     $self->save_user($nick, %victim);
-    $self->debug(Dumper(\$self->{users}{lc $nick}));
     $self->emit_event('user_edited', $nick);
 }
 
@@ -68,12 +66,11 @@ sub show_teaser {
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     return unless exists $user{state};
-    return unless ($user{state} eq 'approved' || $user{state} eq 'pending'); 
+    return unless ($user{state} eq 'approved' || $user{state} eq 'pending');
     my $message = "@{[NORMAL]}Teaser profile for @{[LIGHT_BLUE]}$nick@{[NORMAL]}: @{[NORMAL]}Age@{[NORMAL]}: ";
     $message .= "@{[LIGHT_BLUE]}$user{age}@{[NORMAL]} Gender Identity@{[NORMAL]}: @{[LIGHT_BLUE]}$user{gender} ";
     $message .= "@{[NORMAL]}Orientation@{[NORMAL]}: @{[LIGHT_BLUE]}$user{orientation} @{[NORMAL]}Role@{[NORMAL]}: ";
     $message .= "@{[LIGHT_BLUE]}$user{role}@{[NORMAL]} To see the rest, use @{[BOLD]}@{[LIGHT_BLUE]}!view $nick@{[NORMAL]}.";
-    $self->debug('The message: ' . $message);
     $self->{IRC}->yield(privmsg => $self->{options}{botchan} => $message);
     $self->{IRC}->yield(mode => "$self->{options}{botchan} +v $nick");
 }
@@ -241,7 +238,6 @@ sub enter_age {
     my ($self, $nick, $age) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
-    $self->debug(Dumper(\%user));
     $user{age} = $age;
     my $response = sprintf('Thank you. Your age has been set to %s. ', $age);
     if ($user{state} eq 'new') {
@@ -267,7 +263,6 @@ sub enter_gender {
         $user{state} = 'gendered';
     }
     $self->{IRC}->yield(privmsg => $nick => $response);
-    $self->debug('Sending: ' . Dumper(\%user));
     $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
 }
@@ -316,7 +311,6 @@ sub enter_kinks {
         $response .= 'Alternatively, you can list the type of character you tend to roleplay, e.g. !role Roman legionnaire or !role Comic book superhero. ';
         $user{state} = 'kinky';
     }
-    $self->debug('Postk: ' . Dumper(\%user));
     $self->{IRC}->yield(privmsg => $nick => $response);
     $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
@@ -326,7 +320,6 @@ sub enter_role {
     my ($self, $nick, $role) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
-    $self->debug('Prer: ' . Dumper(\%user));
     $user{role} = $role;
     my $response = sprintf('Thank you. Your role has been set to %s.', $role);
     if ($user{state} eq 'kinky') {
@@ -335,7 +328,6 @@ sub enter_role {
         $response .= 'You can even use conceptual locations, like In a State of Confusion.';
         $user{state} = 'roled';
     }
-    $self->debug('Postr: ' . Dumper(\%user));
     $self->{IRC}->yield(privmsg => $nick => $response);
     $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
