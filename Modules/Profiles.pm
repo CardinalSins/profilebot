@@ -358,12 +358,12 @@ sub enter_description {
     if ($user{state} eq 'located') {
         $user{state} = 'pending';
         $response .= " We're all done here. Happy perving!";
+        my $message = sprintf('%s has created a profile for your viewing pleasure!', $nick);
+        $self->{IRC}->yield(privmsg => $self->{options}{botchan} => $message);
+        $self->emit_event('profile_found', $nick);
     }
     $self->{IRC}->yield(privmsg => $nick => $response);
     $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
-    my $message = sprintf('%s has created a profile for your viewing pleasure!', $nick);
-    $self->{IRC}->yield(privmsg => $self->{options}{botchan} => $message);
-    $self->emit_event('profile_found', $nick);
 }
 1;
