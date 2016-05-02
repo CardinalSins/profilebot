@@ -311,7 +311,7 @@ sub parse {
                         $message = "Approving a profile twice would be the height of folly.";
                     }
                     else {
-                        $message = "Very well, I shall notify the appropriate authorities.";
+                        $message = "As you wish, I will sneer at them with slightly less contempt in the future.";
                         $self->emit_event('modify_state', $victim, 'approved');
                         $self->{IRC}->yield(mode => $self->{options}{botchan} => '+v' => $victim);
                     }
@@ -343,7 +343,7 @@ sub parse {
                         $message = "I'm afraid they are quite out of approbation to remove.";
                     }
                     else {
-                        $message = "Very well, I shall notify the appropriate authorities.";
+                        $message = "Excellent choice. They are quite the rascal, are they not?";
                         $self->emit_event('modify_state', $victim, 'pending');
                         $self->{IRC}->yield(mode => $self->{options}{botchan}, '-v', $victim);
                     }
@@ -375,7 +375,7 @@ sub parse {
                         $message = "I'm worried the key might break if I try to lock that profile again.";
                     }
                     else {
-                        $message = "Very well, I shall notify the appropriate authorities.";
+                        $message = "I've notified General Farthingworth that $victim is to be held incommunicado until further notice.";
                         $self->emit_event('modify_state', $victim, 'locked');
                     }
                 }
@@ -401,7 +401,7 @@ sub parse {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
                 else {
-                    $message = "As you wish. I shall see them to the door.";
+                    $message = "Splendid, I shall see $victim to the door post haste. And good riddance.";
                     $self->emit_event('delete_user', $victim);
                     delete $self->{users}{lc $victim};
                 }
