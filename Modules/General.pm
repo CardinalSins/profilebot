@@ -102,7 +102,7 @@ sub show_commands {
     $self->{IRC}->yield(notice => $nick => "$fg!unrestrict$text:        Remove the restriction from your profile.");
     $self->{IRC}->yield(notice => $nick => "$fg!profilecommands$text:   Show the profile-related commands.");
     if ($chanop || $owner) {
-        $self->{IRC}->yield(notice => $nick => "$og!opcommands$text:      Show only the op commands.");
+        $self->{IRC}->yield(notice => $nick => "$og!opcommands$text:        Show only the op commands.");
     }
 }
 
