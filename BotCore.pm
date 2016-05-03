@@ -238,13 +238,13 @@ sub onotice {
 
 sub where_ok {
     my ($self, $where) = @_;
-    if ($where eq $self->{options}{botchan}) {
+    if (lc $where eq lc $self->{options}{botchan}) {
         return 1;
     }
-    if ($where eq $self->{options}{adminchan}) {
+    if (lc $where eq lc $self->{options}{adminchan}) {
         return 1;
     }
-    if ($where eq $self->{IRC}{INFO}{RealNick}) {
+    if (lc $where eq lc $self->{IRC}{INFO}{RealNick}) {
         return 1;
     }
     return 0;
