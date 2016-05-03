@@ -17,8 +17,22 @@ sub register_handlers {
     $BotCore->register_handler('new_nick', \&BotCore::Modules::Database::loaduser);
     $BotCore->register_handler('user_created', \&BotCore::Modules::Database::new_user);
     $BotCore->register_handler('user_edited', \&BotCore::Modules::Database::saveuser);
-    $BotCore->register_handler('reload_user', \&BotCore::Modules::Database::find_user);
+    $BotCore->register_handler('reload_user', \&BotCore::Modules::Database::loaduser);
     $BotCore->register_handler('delete_user', \&BotCore::Modules::Database::delete_user);
+    $BotCore->register_handler('load_pending', \&BotCore::Modules::Database::reload_pending);
+}
+
+sub reload_pending {
+    my $self = shift;
+    $self->{pending} = [];
+    my $dbh = $self->{DBH};
+    my $query = "SELECT name FROM user WHERE state = 'pending' LIMIT $self->{options}{show_pending}";
+    my $statement = $dbh->prepare($query) or do{ $self->debug($!); return 0; };
+    $statement->execute() or do{ $self->debug($!); return 0; };
+    while (my $row = $statement->fetchrow_hashref()) {
+        my %user = %{$row};
+        push @{$self->{pending}}, $user{name};
+    }
 }
 
 sub delete_user {
@@ -80,29 +94,16 @@ sub loaduser {
     my $username = shift;
     my $dbh = $self->{DBH};
     $self->debug("Loading user $username LU.");
-    my $statement = $dbh->prepare("SELECT id, name, age, gender, orientation, role, location, kinks, limits, description, restricted, host, state, created, updated, seen FROM user WHERE name = ?");
-    $statement->execute($username);
-    my $row = $statement->fetchrow_hashref() or return 1;
+    my $statement = $dbh->prepare("SELECT id, name, age, gender, orientation, role, location, kinks, limits, description, restricted, host, state, created, updated, seen FROM user WHERE name = ?") or do{ $self->debug($!); return 0; };
+    $statement->execute($username) or do{ $self->debug($!); return 0; };
+    my $row = $statement->fetchrow_hashref();
+    return unless defined $row;
     my %user = %{$row};
     if (!defined $user{orientation}) {
         $user{orientation} = 'undefined';
     }
     $self->debug("$username loaded.");
     %{$self->{users}{lc $user{name}}} = %user;
-    return 1;
-}
-
-sub find_user {
-    my $self = shift;
-    my $username = shift;
-    my $dbh = $self->{DBH};
-    $self->debug("Loading user $username FU.");
-    my $statement = $dbh->prepare("SELECT id, name, age, gender, orientation, role, location, kinks, limits, description, restricted, host, state, created, updated, seen FROM user WHERE name LIKE ?");
-    $statement->execute($username);
-    my $row = $statement->fetchrow_hashref() or return 1;
-    my %user = %{$row};
-    $self->debug("$username loaded.");
-    $self->save_user($user{name}, %user);
     return 1;
 }
 
@@ -114,10 +115,10 @@ sub saveuser {
     my $dbh = $self->{DBH};
     my $query = "UPDATE user SET age = ?, gender = ?, orientation = ?, role = ?, location = ?, kinks = ?, ";
     $query .= "limits = ?, description = ?, restricted = ?, host = ?, state = ?, seen = ?, updated = ? WHERE id = $user{id} LIMIT 1";
-    my $statement = $dbh->prepare($query) or do{ print $!; die;};
+    my $statement = $dbh->prepare($query) or do{ $self->debug($!); return 0; };
     $statement->execute($user{age}, $user{gender}, $user{orientation}, $user{role},
                         $user{location}, $user{kinks}, $user{limits}, $user{description},
-                        $user{restricted}, $user{host}, $user{state}, time(), time()) or do{ $self->debug($!); };
+                        $user{restricted}, $user{host}, $user{state}, time(), time()) or do{ $self->debug($!); return 0; };
     $self->emit_event('reload_user', $nick);
     $self->debug("$nick saved.");
     return 1;

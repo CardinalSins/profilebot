@@ -21,6 +21,12 @@ sub new {
     $self->{DBH} = DBI->connect("dbi:mysql:dbname=$self->{options}{dbname}", $self->{options}{dbuser}, $self->{options}{dbpass});
     $self->loadusers();
     $self->loadmodules();
+    my %colors = ( normal => NORMAL, bold => BOLD, underline => UNDERLINE, reverse => REVERSE, italic => ITALIC, fixed => FIXED,
+                   white => WHITE, black => BLACK, blue => BLUE, green => GREEN, red => RED, brown => BROWN, purple => PURPLE,
+                   orange => ORANGE, yellow => YELLOW, light_green => LIGHT_GREEN, teal => TEAL, light_cyan => LIGHT_CYAN,
+                   light_blue => LIGHT_BLUE, pink => PINK, grey => GREY, gray => GREY, light_grey => LIGHT_GREY, light_gray => LIGHT_GREY );
+    %{$self->{colors}} = %colors;
+    $self->emit_event('load_pending');
     %{$self->{UNITS}} = (second => 1, minute => 60, hour => 3600, day => 86400, week => 604800, month => 2592000, year => 31536000);
     open(my $pidfile,">.irpg.pid");
     print $pidfile getpgrp(0) . "\n";
@@ -196,14 +202,15 @@ sub nickchange {
 
 sub debug {
     my $self = shift;
-    (my $text = shift) =~ s/[\r\n]//g;
+    (my $text = shift) =~ s/[\r\n]/ /g;
+    my ($package, $filename, $line) = caller;
     my $die = shift;
     if ($self->{options}{debug} || $self->{options}{verbose}) {
         open(my $debugger,">>$self->{options}{debugfile}") or do {
             print("Error: Cannot open debug file: $!");
             return;
         };
-        print $debugger scalar(localtime) . " $text\n";
+        print $debugger scalar(localtime) . " $package.$line: $text\n";
         close($debugger);
     }
     if ($die) { die("$text\n"); }
@@ -247,20 +254,6 @@ sub parse {
         $self->emit_event("user_command_$keyword", $nick, $where, $command, $chanop, $owner, @arg);
     }
     switch ($command) {
-        case '!restrict' {
-            my $description = join ' ', @arg;
-            $self->emit_event('command_restrict', $nick);
-        }
-        case '!unrestrict' {
-            my $description = join ' ', @arg;
-            $self->emit_event('command_unrestrict', $nick);
-        }
-        case "!reload" {
-            return unless $nick eq $self->{options}{owner};
-            my $message = "Yes, effendi, it shall be done.";
-            $self->respond($message, $where, $nick);
-            kill URG => $$;
-        }
         case "!view" {
             $self->emit_event('view_command', $nick, $where, $chanop, @arg);
         }

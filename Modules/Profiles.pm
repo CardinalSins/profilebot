@@ -21,10 +21,7 @@ sub register_handlers {
     $BotCore->register_handler('profile_found', \&BotCore::Modules::Profiles::show_teaser);
     $BotCore->register_handler('view_command', \&BotCore::Modules::Profiles::view_command);
     $BotCore->register_handler('user_created', \&BotCore::Modules::Profiles::start_interview);
-    $BotCore->register_handler('user_restricted', \&BotCore::Modules::Profiles::restricted);
-    $BotCore->register_handler('user_unrestricted', \&BotCore::Modules::Profiles::unrestricted);
-    $BotCore->register_handler('command_restrict', \&BotCore::Modules::Profiles::restrict);
-    $BotCore->register_handler('command_unrestrict', \&BotCore::Modules::Profiles::unrestrict);
+    $BotCore->register_handler('user_command_restrict', \&BotCore::Modules::Profiles::restrict);
     $BotCore->register_handler('user_command_age', \&BotCore::Modules::Profiles::enter_age);
     $BotCore->register_handler('user_command_gender', \&BotCore::Modules::Profiles::enter_gender);
     $BotCore->register_handler('user_command_orientation', \&BotCore::Modules::Profiles::enter_orientation);
@@ -34,8 +31,6 @@ sub register_handlers {
     $BotCore->register_handler('user_command_limits', \&BotCore::Modules::Profiles::enter_limits);
     $BotCore->register_handler('user_command_description', \&BotCore::Modules::Profiles::enter_description);
     $BotCore->register_handler('user_command_setup', \&BotCore::Modules::Profiles::command_setup);
-    $BotCore->register_handler('already_restricted', \&BotCore::Modules::Profiles::already_restricted);
-    $BotCore->register_handler('already_unrestricted', \&BotCore::Modules::Profiles::already_unrestricted);
 }
 
 sub set_state {
@@ -92,83 +87,21 @@ sub error_message {
 }
 
 sub restrict {
-    my ($self, $nick, $target) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
+    my $message;
     if ($user{restricted} == 1 || $user{restricted} eq '1') {
-        $self->emit_event('already_restricted', $nick, $target);
-        return 1;
+        $message = sprintf('Ok, %s. Your profile has been made available to all users.', $nick);
+        $user{restricted} = 0;
     }
-    $user{restricted} = 1;
+    else {
+        $message = sprintf('Ok, %s. Your profile has been restricted to users with profiles only.', $nick);
+        $user{restricted} = 1;
+    }
     $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
-    $self->emit_event('user_restricted', $nick, $target);
-}
-
-sub restricted {
-    my ($self, $nick, $target) = @_;
-    my $channel_view;
-    if ($target eq $self->{IRC}{INFO}{RealNick}) {
-        $channel_view = 0;
-    }
-    else {
-        $channel_view = 1;
-    }
-    my $message = sprintf('Ok, %s. Your profile has been restricted to users with profiles only.', $nick);
-    $self->emit_event('error_message', $channel_view, $message, $nick);
-}
-
-sub already_restricted {
-    my ($self, $nick, $target) = @_;
-    my $channel_view;
-    if ($target eq $self->{IRC}{INFO}{RealNick}) {
-        $channel_view = 0;
-    }
-    else {
-        $channel_view = 1;
-    }
-    my $message = sprintf('Your profile has already been restricted, %s.', $nick);
-    $self->emit_event('error_message', $channel_view, $message, $nick);
-}
-
-sub already_unrestricted {
-    my ($self, $nick, $target) = @_;
-    my $channel_view;
-    if ($target eq $self->{IRC}{INFO}{RealNick}) {
-        $channel_view = 0;
-    }
-    else {
-        $channel_view = 1;
-    }
-    my $message = sprintf('Your profile is already available to anyone, %s.', $nick);
-    $self->emit_event('error_message', $channel_view, $message, $nick);
-}
-
-sub unrestrict {
-    my ($self, $nick, $target) = @_;
-    return unless defined $self->get_user($nick);
-    my %user = $self->get_user($nick);
-    if ($user{restricted} == 0 || $user{restricted} eq '0') {
-        $self->emit_event('already_unrestricted', $nick, $target);
-        return 1;
-    }
-    $user{restricted} = 0;
-    $self->save_user($nick, %user);
-    $self->emit_event('user_edited', $nick);
-    $self->emit_event('user_unrestricted', $nick, $target);
-}
-
-sub unrestricted {
-    my ($self, $nick, $target) = @_;
-    my $channel_view;
-    if ($target eq $self->{IRC}{INFO}{RealNick}) {
-        $channel_view = 0;
-    }
-    else {
-        $channel_view = 1;
-    }
-    my $message = sprintf('Ok, %s. Your profile has been made available to all users.', $nick);
-    $self->emit_event('error_message', $channel_view, $message, $nick);
+    $self->respond($message, $where, $nick);
 }
 
 sub view_command {
