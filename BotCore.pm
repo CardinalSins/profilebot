@@ -67,15 +67,18 @@ sub readconfig {
     print "Loading options... ";
     my $self = shift;
     if (! -e ".config.json") {
-        print("Error: Cannot find .config.yaml. Copy it to this directory, please.",1);
+        print("Error: Cannot find .config.json. Copy it to this directory, please.",1);
     }
     else {
         my $config;
-        open (my FH, '<.config.json');
+        open (FH, '<.config.json');
         while (<FH>) {
             $config .= $_;
         }
-        $self->{options} = decode_json($config);
+        # $self->debug($config);
+        %{$self->{options}} = %{decode_json($config)};
+        # $self->debug(Dumper($self->{options}));
+        close FH;
     }
     print "Done!\n";
 }
@@ -83,11 +86,15 @@ sub readconfig {
 sub saveconfig {
     print "Saving options... ";
     my ($self, %options) = @_;
-    if (! -e ".config.yaml") {
-        print("Error: Cannot find .config.yaml. Copy it to this directory, please.",1);
+    %{$self->{options}} = %options;
+    if (! -e ".config.json") {
+        print("Error: Cannot find .config.json. Copy it to this directory, please.",1);
     }
     else {
-        YAML::DumpFile(".config.yaml", %options);
+        open (FH, '>.config.json');
+        print FH encode_json($self->{options});
+        close FH;
+        # YAML::DumpFile(".config.json", %options);
         $self->readconfig();
     }
     print "Done!\n";
@@ -215,8 +222,20 @@ sub parse {
     my $command = lc shift @arg;
     my $poco = $sender->get_heap();
     my $chanop = $poco->is_channel_operator($self->{options}{botchan}, $nick);
-    return if $nick ~= /^(Cuff\d+|Guest\d+|Perv\d+|mib_.+)/;
-    $self->emit_event("user_command $command", $nick, $chanop, $where, $command, @arg);
+    my $owner = ($nick eq $self->{options}{owner});
+    return if $nick =~ /^(Cuff\d+|Guest\d+|Perv\d+|mib_.+)/;
+    if ($what =~ /^!([^ ]+) ?(.*)/) {
+        my $keyword = $1;
+        my @arg;
+        if (defined $2) {
+            @arg = split / /, $2;
+        }
+        else {
+            @arg = undef;
+        }
+        $self->debug(Dumper(\@arg));
+        $self->emit_event("user_command_$keyword", $nick, $where, $command, $chanop, $owner, @arg);
+    }
     switch ($command) {
         case '!age' {
             my $age = join ' ', @arg;

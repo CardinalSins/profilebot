@@ -2,3 +2,5 @@
 debug.log
 .config.yaml
 .config.yaml.bak
+.config.json
+.config.json.bak
