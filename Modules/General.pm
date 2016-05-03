@@ -18,6 +18,7 @@ sub register_handlers {
     $BotCore->register_handler('user_command_profilecommands', \&BotCore::Modules::General::show_profile_commands);
     $BotCore->register_handler('user_command_opcommands', \&BotCore::Modules::General::show_op_commands);
     $BotCore->register_handler('user_command_commands', \&BotCore::Modules::General::show_commands);
+    $BotCore->register_handler('user_command_colours', \&BotCore::Modules::General::show_colors);
     $BotCore->register_handler('user_command_colors', \&BotCore::Modules::General::show_colors);
 }
 
@@ -61,7 +62,6 @@ sub show_colors {
     my $light_blue = $self->{colors}{light_blue} . 'light_blue' . $self->{colors}{normal};
     my $light_grey = $self->{colors}{light_grey} . 'light_grey' . $self->{colors}{normal};
     my $light_cyan = $self->{colors}{light_cyan} . 'light_cyan' . $self->{colors}{normal}; #
-    #NORMAL BOLD UNDERLINE REVERSE ITALIC FIXED WHITE BLACK BLUE GREEN RED BROWN PURPLE ORANGE YELLOW LIGHT_GREEN TEAL LIGHT_CYAN LIGHT_BLUE PINK GREY LIGHT_GREY
     $self->{IRC}->yield(notice => $nick => "$normal        $bold             $underline");
     $self->{IRC}->yield(notice => $nick => "$reverse       $italic           $fixed");
     $self->{IRC}->yield(notice => $nick => "$black         $grey      $light_grey    $white");
@@ -92,13 +92,15 @@ sub show_commands {
     my $og = $self->{colors}{$self->{options}{op_color}};
     my $text = $self->{colors}{$self->{options}{text_color}};
     $self->{IRC}->yield(notice => $nick => "====== General Commands supported by PoCoProfileBot v1.0.0 ======");
-    $self->{IRC}->yield(notice => $nick => "$fg!commands$text:        Show this help text.");
-    $self->{IRC}->yield(notice => $nick => "$fg!info$text:            Show information about the bot.");
-    $self->{IRC}->yield(notice => $nick => "$fg!rules$text:           Show the channel rules.");
-    $self->{IRC}->yield(notice => $nick => "$fg!jeeves$text:          Alert the channel ops that you need assistance.");
-    $self->{IRC}->yield(notice => $nick => "$fg!restrict$text:        Restrict viewing your profile to users with profiles only.");
-    $self->{IRC}->yield(notice => $nick => "$fg!unrestrict$text:      Remove the restriction from your profile.");
-    $self->{IRC}->yield(notice => $nick => "$fg!profilecommands$text: Show the profile-related commands.");
+    $self->{IRC}->yield(notice => $nick => "$fg!commands$text:          Show this help text.");
+    $self->{IRC}->yield(notice => $nick => "$fg!info$text:              Show information about the bot.");
+    $self->{IRC}->yield(notice => $nick => "$fg!colors$text:            Show which color names the bot supports.");
+    $self->{IRC}->yield(notice => $nick => "$fg!colours$text:           Show which colour names the bot supports.");
+    $self->{IRC}->yield(notice => $nick => "$fg!rules$text:             Show the channel rules.");
+    $self->{IRC}->yield(notice => $nick => "$fg!jeeves$text:            Alert the channel ops that you need assistance.");
+    $self->{IRC}->yield(notice => $nick => "$fg!restrict$text:          Restrict viewing your profile to users with profiles only.");
+    $self->{IRC}->yield(notice => $nick => "$fg!unrestrict$text:        Remove the restriction from your profile.");
+    $self->{IRC}->yield(notice => $nick => "$fg!profilecommands$text:   Show the profile-related commands.");
     if ($chanop || $owner) {
         $self->{IRC}->yield(notice => $nick => "$og!opcommands$text:      Show only the op commands.");
     }
