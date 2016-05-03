@@ -251,10 +251,6 @@ sub parse {
             my $message = "That command does not exist. Just update the value you want to update. Use @{[LIGHT_BLUE]}!profilecommands@{[NORMAL]} to find out how.";
             $self->respond($message, $where, $nick);
         }
-        case '!info' {
-            my $message = "This is PoCoProfileBot v1.0.0, written in less than 48 hours by CardinalSins.";
-            $self->respond($message, $where, $nick);
-        }
         case '!restrict' {
             my $description = join ' ', @arg;
             $self->emit_event('command_restrict', $nick);
