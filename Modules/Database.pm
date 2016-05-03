@@ -34,7 +34,7 @@ sub reload_pending {
     my $pending = $pendcnt{count};
     $self->{pending_count} = $pending;
     $statement->execute() or do{ $self->debug($!); return 0; };
-    $query = "SELECT name FROM user WHERE state = 'pending' LIMIT $self->{options}{show_pending}";
+    $query = "SELECT name FROM user WHERE state = 'pending' ORDER BY RAND() LIMIT $self->{options}{show_pending}";
     $statement = $dbh->prepare($query) or do{ $self->debug($!); return 0; };
     $statement->execute() or do{ $self->debug($!); return 0; };
     while (my $row = $statement->fetchrow_hashref()) {
