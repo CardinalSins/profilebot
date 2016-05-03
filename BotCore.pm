@@ -247,10 +247,6 @@ sub parse {
         $self->emit_event("user_command_$keyword", $nick, $where, $command, $chanop, $owner, @arg);
     }
     switch ($command) {
-        case '!edit' {
-            my $message = "That command does not exist. Just update the value you want to update. Use @{[LIGHT_BLUE]}!profilecommands@{[NORMAL]} to find out how.";
-            $self->respond($message, $where, $nick);
-        }
         case '!restrict' {
             my $description = join ' ', @arg;
             $self->emit_event('command_restrict', $nick);

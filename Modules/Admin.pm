@@ -14,11 +14,12 @@ sub new {
 sub register_handlers {
     my ($self, $BotCore) = @_;
     $BotCore->register_handler('user_command_config', \&BotCore::Modules::Admin::config_option);
+    $BotCore->register_handler('user_command_pending', \&BotCore::Modules::Admin::list_pending);
 }
 
 sub config_option {
     my ($self, $nick, $target, $command, $chanop, $owner, @arg) = @_;
-    return unless $owner;
+    return unless $owner or $chanop;
     my $config_option = shift @arg;
     my $config_value = join ' ', @arg;
     my %new_opts = %{$self->{options}};
