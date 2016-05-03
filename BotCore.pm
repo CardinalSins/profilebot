@@ -254,9 +254,6 @@ sub parse {
         $self->emit_event("user_command_$keyword", $nick, $where, $command, $chanop, $owner, @arg);
     }
     switch ($command) {
-        case "!view" {
-            $self->emit_event('view_command', $nick, $where, $chanop, @arg);
-        }
         case "!approve" {
             my $victim = shift @arg;
             my $message;

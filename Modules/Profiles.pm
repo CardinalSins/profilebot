@@ -19,8 +19,8 @@ sub register_handlers {
     $BotCore->register_handler('nick_change', \&BotCore::Modules::Profiles::check_new_nick);
     $BotCore->register_handler('error_message', \&BotCore::Modules::Profiles::error_message);
     $BotCore->register_handler('profile_found', \&BotCore::Modules::Profiles::show_teaser);
-    $BotCore->register_handler('view_command', \&BotCore::Modules::Profiles::view_command);
     $BotCore->register_handler('user_created', \&BotCore::Modules::Profiles::start_interview);
+    $BotCore->register_handler('user_command_view', \&BotCore::Modules::Profiles::view_command);
     $BotCore->register_handler('user_command_restrict', \&BotCore::Modules::Profiles::restrict);
     $BotCore->register_handler('user_command_age', \&BotCore::Modules::Profiles::enter_age);
     $BotCore->register_handler('user_command_gender', \&BotCore::Modules::Profiles::enter_gender);
@@ -105,28 +105,20 @@ sub restrict {
 }
 
 sub view_command {
-    my ($self, $who, $target, $chanop, @arg) = @_;
-    my $profile = $arg[0];
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my $profile = shift @arg;
     $self->emit_event('reload_user', $profile);
-    my ($nick, $userhost) = split /!/, $who;
-    my $channel_view;
-    my $message;
-    if ($target eq $self->{IRC}{INFO}{RealNick}) {
-        $channel_view = 0;
-    }
-    else {
-        $channel_view = 1;
-    }
     if (!defined $self->get_user($profile)) {
-        $message = sprintf('Sorry, %s, no profile found under %s. Try a different name.', $nick, $profile);
-        $self->emit_event('error_message', $channel_view, $message, $nick);
+        my $message = sprintf('Sorry, %s, no profile found under %s. Try a different name.', $nick, $profile);
+        $self->respond($message, $where, $nick);
         return 1;
     }
     else {
         my %user = $self->get_user($profile);
         my $possessive = (lc(substr $profile, -1) eq 's' ? $profile . "'" : $profile . "'s" );
         my $state = $user{state};
-        if ($state ne 'approved' && !$chanop) {
+        my $oplocked;
+        if ($state ne 'approved' && !($chanop || $owner)) {
             my $message;
             switch ($state) {
                 case "pending" {
@@ -139,23 +131,24 @@ sub view_command {
                     $message = sprintf('Sorry, %s. %s profile is not available yet. Please try again later.', $nick, $possessive);
                 }
             }
-            $self->emit_event('error_message', $channel_view, $message, $nick);
+            $self->respond($message, $where, $nick);
             return 1;
         }
         if ($user{restricted} && (!defined $self->get_user($nick) || $self->{users}{lc $nick}{state} ne 'approved') && !$chanop) {
             my $possessive = (lc(substr $profile, -1) eq 's' ? $profile . "'" : $profile . "'s" );
-            $message = sprintf('Sorry, %s. %s profile has been restricted to users with approved profiles only. Create a profile or get yours approved by the ops and try again.', $nick, $possessive);
-            $self->emit_event('error_message', $channel_view, $message, $nick);
+            my $message = sprintf('Sorry, %s. %s profile has been restricted to users with approved profiles only. Create a profile or get yours approved by the ops and try again.', $nick, $possessive);
+            $self->respond($message, $where, $nick);
             return 1;
         }
-        my $message = "@{[NORMAL]}Roleplay profile for @{[LIGHT_BLUE]}$user{name}@{[NORMAL]}: @{[NORMAL]}Age@{[NORMAL]}: ";
+        my $userstate = ((($chanop || $owner) && $state ne 'approved') ? "[$self->{colors}{red}" . uc $state . "$self->{colors}{normal}] " : '');
+        my $message = "@{[NORMAL]}" . $userstate . "Roleplay profile for @{[LIGHT_BLUE]}$user{name}@{[NORMAL]}: @{[NORMAL]}Age@{[NORMAL]}: ";
         $message .= "@{[LIGHT_BLUE]}$user{age}@{[NORMAL]} Gender Identity@{[NORMAL]}: @{[LIGHT_BLUE]}$user{gender} ";
         $message .= "@{[NORMAL]}Orientation@{[NORMAL]}: @{[LIGHT_BLUE]}$user{orientation} @{[NORMAL]}Preferred Role@{[NORMAL]}: ";
         $message .= "@{[LIGHT_BLUE]}$user{role}@{[NORMAL]} Location@{[NORMAL]}: @{[LIGHT_BLUE]}$user{location} ";
         $self->{IRC}->yield(notice => $nick => $message);
-        $self->{IRC}->yield(notice => $nick => "@{[NORMAL]}Kinks@{[NORMAL]}: @{[LIGHT_BLUE]}$user{kinks}");
-        $self->{IRC}->yield(notice => $nick => "@{[NORMAL]}Limits@{[NORMAL]}: @{[LIGHT_BLUE]}$user{limits}");
-        $self->{IRC}->yield(notice => $nick => "@{[NORMAL]}Description@{[NORMAL]}: @{[LIGHT_BLUE]}$user{description}");
+        $self->{IRC}->yield(notice => $nick => $userstate . "@{[NORMAL]}Kinks@{[NORMAL]}: @{[LIGHT_BLUE]}$user{kinks}");
+        $self->{IRC}->yield(notice => $nick => $userstate . "@{[NORMAL]}Limits@{[NORMAL]}: @{[LIGHT_BLUE]}$user{limits}");
+        $self->{IRC}->yield(notice => $nick => $userstate . "@{[NORMAL]}Description@{[NORMAL]}: @{[LIGHT_BLUE]}$user{description}");
     }
     return 1;
 }

@@ -91,18 +91,17 @@ sub new_user {
 
 sub loaduser {
     my $self = shift;
-    my $username = shift;
+    my $nick = shift;
     my $dbh = $self->{DBH};
-    $self->debug("Loading user $username LU.");
     my $statement = $dbh->prepare("SELECT id, name, age, gender, orientation, role, location, kinks, limits, description, restricted, host, state, created, updated, seen FROM user WHERE name = ?") or do{ $self->debug($!); return 0; };
-    $statement->execute($username) or do{ $self->debug($!); return 0; };
+    $statement->execute($nick) or do{ $self->debug($!); return 0; };
     my $row = $statement->fetchrow_hashref();
     return unless defined $row;
     my %user = %{$row};
     if (!defined $user{orientation}) {
         $user{orientation} = 'undefined';
     }
-    $self->debug("$username loaded.");
+    $self->debug("$nick loaded.");
     %{$self->{users}{lc $user{name}}} = %user;
     return 1;
 }
