@@ -259,7 +259,7 @@ sub parse {
     my @arg = split / /, $what;
     my $command = lc shift @arg;
     my $poco = $sender->get_heap();
-    my $chanop = $poco->is_channel_operator($self->{options}{botchan}, $nick);
+    my $botadmin = ($poco->is_channel_operator($self->{options}{botchan}, $nick) || $poco->is_channel_operator($self->{options}{botchan}, $nick) || $nick eq $self->{options}{owner});
     my $owner = ($nick eq $self->{options}{owner});
     return if $nick =~ /^(Cuff\d+|Guest\d+|Perv\d+|mib_.+)/;
     if ($what =~ /^!([^ ]+) ?(.*)/) {
@@ -271,7 +271,7 @@ sub parse {
         else {
             @arg = undef;
         }
-        $self->emit_event("user_command_$keyword", $nick, $where, $command, $chanop, $owner, @arg);
+        $self->emit_event("user_command_$keyword", $nick, $where, $command, $botadmin, $owner, @arg);
     }
 }
 1;

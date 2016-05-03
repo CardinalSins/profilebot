@@ -25,10 +25,10 @@ sub register_handlers {
 }
 
 sub command_delete {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
     my $victim = shift @arg;
     my $message = undef;
-    if (!$chanop) {
+    if (!$botadmin) {
         $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
     }
     else {
@@ -51,11 +51,11 @@ sub command_delete {
 }
 
 sub command_approve {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
     return unless $self->where_ok($where);
     my $victim = shift @arg;
     my $message = undef;
-    if (!$chanop) {
+    if (!$botadmin) {
         $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
     }
     else {
@@ -84,7 +84,7 @@ sub command_approve {
                 }
             }
             if ($user{state} eq $state) {
-                $message = "I already had it that way.";
+                $message = "Sorry, $victim is already $state.";
             }
             else {
                 my $fg = $self->{colors}{$self->{options}{variable_color}};
@@ -106,7 +106,7 @@ sub command_approve {
 }
 
 sub config_option {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
     return unless $self->where_ok($where);
     return unless $owner;
     my $config_option = shift @arg;
@@ -118,9 +118,9 @@ sub config_option {
 }
 
 sub command_pending {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
     return unless $self->where_ok($where);
-    return unless $owner || $chanop;
+    return unless $owner || $botadmin;
     $self->emit_event('load_pending');
     my $message;
     if ($self->{pending_count} > 0) {
@@ -134,7 +134,7 @@ sub command_pending {
 }
 
 sub command_reload {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
     return unless $self->where_ok($where);
     return unless $owner;
     my $message = "Yes, effendi, it shall be done.";
