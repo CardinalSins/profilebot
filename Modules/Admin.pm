@@ -3,7 +3,6 @@ use warnings;
 
 package BotCore::Modules::Admin;
 use Data::Dumper;
-use IRC::Utils qw(NORMAL BOLD UNDERLINE REVERSE ITALIC FIXED WHITE BLACK BLUE GREEN RED BROWN PURPLE ORANGE YELLOW LIGHT_GREEN TEAL LIGHT_CYAN LIGHT_BLUE PINK GREY LIGHT_GREY);
 
 sub new {
     my $class = shift;
@@ -34,7 +33,8 @@ sub command_pending {
     my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
     return unless $owner || $chanop;
     $self->emit_event('load_pending');
-    my $message = "Users pending approval: $self->{colors}{light_blue}" . join "$self->{colors}{normal}, $self->{colors}{light_blue}", @{$self->{pending}};
+    my $fg = $self->{colors}{$self->{options}{variable_color}};
+    my $message = "Users pending approval: $fg" . join "$self->{colors}{normal}, $fg", @{$self->{pending}};
     $self->respond($message, $where, $nick);
 }
 

@@ -4,7 +4,6 @@ use warnings;
 package BotCore::Modules::Profiles;
 use Data::Dumper;
 use Switch;
-use IRC::Utils qw(NORMAL BOLD UNDERLINE REVERSE ITALIC FIXED WHITE BLACK BLUE GREEN RED BROWN PURPLE ORANGE YELLOW LIGHT_GREEN TEAL LIGHT_CYAN LIGHT_BLUE PINK GREY LIGHT_GREY);
 
 sub new {
     my $class = shift;
@@ -62,10 +61,13 @@ sub show_teaser {
     my %user = $self->get_user($nick);
     return unless exists $user{state};
     return unless ($user{state} eq 'approved' || $user{state} eq 'pending');
-    my $message = "@{[NORMAL]}Teaser profile for @{[LIGHT_BLUE]}$nick@{[NORMAL]}: @{[NORMAL]}Age@{[NORMAL]}: ";
-    $message .= "@{[LIGHT_BLUE]}$user{age}@{[NORMAL]} Gender Identity@{[NORMAL]}: @{[LIGHT_BLUE]}$user{gender} ";
-    $message .= "@{[NORMAL]}Orientation@{[NORMAL]}: @{[LIGHT_BLUE]}$user{orientation} @{[NORMAL]}Role@{[NORMAL]}: ";
-    $message .= "@{[LIGHT_BLUE]}$user{role}@{[NORMAL]} To see the rest, use @{[BOLD]}@{[LIGHT_BLUE]}!view $nick@{[NORMAL]}.";
+    my $fg = $self->{colors}{$self->{options}{variable_color}};
+    my $text = $self->{colors}{$self->{options}{text_color}};
+    my $message = $text . "Teaser profile for $fg$nick$text: Age: $fg$user{age}$text ";
+    $message .= "Gender Identity: $fg$user{gender}$text ";
+    $message .= "Orientation: $fg$user{orientation}$text ";
+    $message .= "Role: $fg$user{role}$text ";
+    $message .= "To see the rest, use $self->{colors}{bold}$fg!view $nick$text.";
     $self->{IRC}->yield(privmsg => $self->{options}{botchan} => $message);
     $self->{IRC}->yield(mode => "$self->{options}{botchan} +v $nick");
 }
@@ -140,15 +142,19 @@ sub view_command {
             $self->respond($message, $where, $nick);
             return 1;
         }
-        my $userstate = ((($chanop || $owner) && $state ne 'approved') ? "[$self->{colors}{red}" . uc $state . "$self->{colors}{normal}] " : '');
-        my $message = "@{[NORMAL]}" . $userstate . "Roleplay profile for @{[LIGHT_BLUE]}$user{name}@{[NORMAL]}: @{[NORMAL]}Age@{[NORMAL]}: ";
-        $message .= "@{[LIGHT_BLUE]}$user{age}@{[NORMAL]} Gender Identity@{[NORMAL]}: @{[LIGHT_BLUE]}$user{gender} ";
-        $message .= "@{[NORMAL]}Orientation@{[NORMAL]}: @{[LIGHT_BLUE]}$user{orientation} @{[NORMAL]}Preferred Role@{[NORMAL]}: ";
-        $message .= "@{[LIGHT_BLUE]}$user{role}@{[NORMAL]} Location@{[NORMAL]}: @{[LIGHT_BLUE]}$user{location} ";
+        my $fg = $self->{colors}{$self->{options}{variable_color}};
+        my $text = $self->{colors}{$self->{options}{text_color}};
+        my $userstate = ((($chanop || $owner) && $state ne 'approved') ? "[$self->{colors}{red}" . uc $state . "$text] " : $text);
+        my $message = $userstate . "Roleplay profile for $fg$user{name}$text: ";
+        $message .= $text . "Age$text: $fg$user{age} ";
+        $message .= $text . "Gender Identity$text: $fg$user{gender} ";
+        $message .= $text . "Orientation$text: $fg$user{orientation} ";
+        $message .= $text . "Preferred Role$text: $fg$user{role} ";
+        $message .= $text . "Location$text: $fg$user{location} ";
         $self->{IRC}->yield(notice => $nick => $message);
-        $self->{IRC}->yield(notice => $nick => $userstate . "@{[NORMAL]}Kinks@{[NORMAL]}: @{[LIGHT_BLUE]}$user{kinks}");
-        $self->{IRC}->yield(notice => $nick => $userstate . "@{[NORMAL]}Limits@{[NORMAL]}: @{[LIGHT_BLUE]}$user{limits}");
-        $self->{IRC}->yield(notice => $nick => $userstate . "@{[NORMAL]}Description@{[NORMAL]}: @{[LIGHT_BLUE]}$user{description}");
+        $self->{IRC}->yield(notice => $nick => $userstate . $text . "Kinks$text: $fg$user{kinks}");
+        $self->{IRC}->yield(notice => $nick => $userstate . $text . "Limits$text: $fg$user{limits}");
+        $self->{IRC}->yield(notice => $nick => $userstate . $text . "Description$text: $fg$user{description}");
     }
     return 1;
 }
