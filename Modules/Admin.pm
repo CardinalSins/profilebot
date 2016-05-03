@@ -33,8 +33,14 @@ sub command_pending {
     my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
     return unless $owner || $chanop;
     $self->emit_event('load_pending');
-    my $fg = $self->{colors}{$self->{options}{variable_color}};
-    my $message = "$self->{pending_count} users await approval. First $self->{options}{show_pending}: $fg" . join "$self->{colors}{normal}, $fg", @{$self->{pending}};
+    my $message;
+    if ($self->{pending_count} > 0) {
+        my $fg = $self->{colors}{$self->{options}{variable_color}};
+        $message = "$self->{pending_count} users await approval. First $self->{options}{show_pending}: $fg" . join "$self->{colors}{normal}, $fg", @{$self->{pending}};
+    }
+    else {
+        $message = "Checking ... no pending users found, good job.";
+    }
     $self->respond($message, $where, $nick);
 }
 
