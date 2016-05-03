@@ -17,8 +17,8 @@ sub register_handlers {
     $BotCore->register_handler('user_command_config', \&BotCore::Modules::Admin::config_option);
     $BotCore->register_handler('user_command_pending', \&BotCore::Modules::Admin::command_pending);
     $BotCore->register_handler('user_command_reload', \&BotCore::Modules::Admin::command_reload);
-    $BotCore->register_handler('user_command_approve', \&BotCore::Modules::Admin::command_approve);
-    $BotCore->register_handler('user_command_unapprove', \&BotCore::Modules::Admin::command_approve);
+    $BotCore->register_handler('user_command_ok', \&BotCore::Modules::Admin::command_approve);
+    $BotCore->register_handler('user_command_hide', \&BotCore::Modules::Admin::command_approve);
     $BotCore->register_handler('user_command_lock', \&BotCore::Modules::Admin::command_approve);
     $BotCore->register_handler('user_command_delete', \&BotCore::Modules::Admin::command_delete);
     $BotCore->register_handler('user_command_unlock', \&BotCore::Modules::Admin::command_approve);
@@ -67,10 +67,10 @@ sub command_approve {
             my %user = $self->get_user($victim);
             my $state;
             switch ($command) {
-                case "!approve" {
+                case "!ok" {
                     $state = 'approved';
                 }
-                case "!unapprove" {
+                case "!hide" {
                     $state = 'pending';
                 }
                 case "!lock" {
