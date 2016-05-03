@@ -25,15 +25,15 @@ sub register_handlers {
     $BotCore->register_handler('user_unrestricted', \&BotCore::Modules::Profiles::unrestricted);
     $BotCore->register_handler('command_restrict', \&BotCore::Modules::Profiles::restrict);
     $BotCore->register_handler('command_unrestrict', \&BotCore::Modules::Profiles::unrestrict);
-    $BotCore->register_handler('command_age', \&BotCore::Modules::Profiles::enter_age);
-    $BotCore->register_handler('command_gender', \&BotCore::Modules::Profiles::enter_gender);
-    $BotCore->register_handler('command_orientation', \&BotCore::Modules::Profiles::enter_orientation);
-    $BotCore->register_handler('command_role', \&BotCore::Modules::Profiles::enter_role);
-    $BotCore->register_handler('command_location', \&BotCore::Modules::Profiles::enter_location);
-    $BotCore->register_handler('command_kinks', \&BotCore::Modules::Profiles::enter_kinks);
-    $BotCore->register_handler('command_limits', \&BotCore::Modules::Profiles::enter_limits);
-    $BotCore->register_handler('command_description', \&BotCore::Modules::Profiles::enter_description);
-    $BotCore->register_handler('channel_command !setup', \&BotCore::Modules::Profiles::command_setup);
+    $BotCore->register_handler('user_command_age', \&BotCore::Modules::Profiles::enter_age);
+    $BotCore->register_handler('user_command_gender', \&BotCore::Modules::Profiles::enter_gender);
+    $BotCore->register_handler('user_command_orientation', \&BotCore::Modules::Profiles::enter_orientation);
+    $BotCore->register_handler('user_command_role', \&BotCore::Modules::Profiles::enter_role);
+    $BotCore->register_handler('user_command_location', \&BotCore::Modules::Profiles::enter_location);
+    $BotCore->register_handler('user_command_kinks', \&BotCore::Modules::Profiles::enter_kinks);
+    $BotCore->register_handler('user_command_limits', \&BotCore::Modules::Profiles::enter_limits);
+    $BotCore->register_handler('user_command_description', \&BotCore::Modules::Profiles::enter_description);
+    $BotCore->register_handler('user_command_setup', \&BotCore::Modules::Profiles::command_setup);
     $BotCore->register_handler('already_restricted', \&BotCore::Modules::Profiles::already_restricted);
     $BotCore->register_handler('already_unrestricted', \&BotCore::Modules::Profiles::already_unrestricted);
 }
@@ -227,19 +227,34 @@ sub view_command {
     return 1;
 }
 
+sub command_setup {
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    return if defined $self->get_user($nick);
+    my %user;
+    $user{name} = $nick;
+    $user{host} = $nick . '@' . $where;
+    $user{state} = 'new';
+    $user{created} = time();
+    $user{seen} = time();
+    $user{updated} = time();
+    $user{restricted} = '1';
+    $self->save_user($nick, %user);
+    $self->emit_event('user_created', $nick);
+}
+
 sub start_interview {
-    my ($self, $nick) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
     $self->{IRC}->yield(privmsg => $nick => "Welcome to the PoCoProfileBot 1.0.0 interrogation process.");
     $self->{IRC}->yield(privmsg => $nick => "Note that all responses will be limited to 500 characters.");
     $self->{IRC}->yield(privmsg => $nick => "Please begin by entering your age using the command !age, e.g. !age 20 or !age Older Than The Universe.");
 }
 
 sub enter_age {
-    my ($self, $nick, $age) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
-    $user{age} = $age;
-    my $response = sprintf('Thank you. Your age has been set to %s. ', $age);
+    $user{age} = join ' ', @arg;
+    my $response = "Thank you. Your age has been set to $user{age}.";
     if ($user{state} eq 'new') {
         $response .= 'Now enter your gender identity using !gender. ';
         $response .= 'This can be as basic or elaborate as you like, e.g. ';
@@ -252,11 +267,11 @@ sub enter_age {
 }
 
 sub enter_gender {
-    my ($self, $nick, $gender) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
-    $user{gender} = $gender;
-    my $response = sprintf('Thank you. Your gender identity has been set to %s. ', $gender);
+    $user{gender} = join ' ', @arg;
+    my $response = "Thank you. Your gender identity has been set to $user{gender}.";
     if ($user{state} eq 'aged') {
         $response .= 'Now enter your orientation using !orientation. ';
         $response .= 'For example !orientation lesbian or !orientation I only play with left-handed redheaded men between 35 and 37 years old.';
@@ -268,11 +283,11 @@ sub enter_gender {
 }
 
 sub enter_orientation {
-    my ($self, $nick, $orientation) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
-    $user{orientation} = $orientation;
-    my $response = sprintf('Thank you. Your orientation has been set to %s. ', $orientation);
+    $user{orientation} = join ' ', @arg;
+    my $response = "Thank you. Your orientation has been set to $user{orientation}.";
     if ($user{state} eq 'gendered') {
         $response .= 'Now enter your limits using !limits. ';
         $response .= 'For example !limits pain or !limits People who misspell HUMOUR.';
@@ -284,11 +299,11 @@ sub enter_orientation {
 }
 
 sub enter_limits {
-    my ($self, $nick, $limits) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
-    $user{limits} = $limits;
-    my $response = sprintf('Thank you. Your limits have been set to %s. ', $limits);
+    $user{limits} = join ' ', @arg;
+    my $response = "Thank you. Your limits have been set to $user{limits}.";
     if ($user{state} eq 'oriented') {
         $response .= 'Now enter your kinks using !kinks. ';
         $response .= 'For example !kinks spanking or !kinks People who can spell HUMOUR, COLOUR, and HONOUR correctly.';
@@ -300,11 +315,11 @@ sub enter_limits {
 }
 
 sub enter_kinks {
-    my ($self, $nick, $kinks) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
-    $user{kinks} = $kinks;
-    my $response = sprintf('Thank you. Your kinks have been set to %s. ', $kinks);
+    $user{kinks} = join ' ', @arg;
+    my $response = "Thank you. Your kinks have been set to $user{kinks}.";
     if ($user{state} eq 'limited') {
         $response .= 'Now enter your preferred role using !role. ';
         $response .= 'This can be what role you prefer within BDSM; e.g. !role top, or !role masochist. ';
@@ -317,11 +332,11 @@ sub enter_kinks {
 }
 
 sub enter_role {
-    my ($self, $nick, $role) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
-    $user{role} = $role;
-    my $response = sprintf('Thank you. Your role has been set to %s.', $role);
+    $user{role} = join ' ', @arg;
+    my $response = "Thank you. Your role has been set to $user{role}.";
     if ($user{state} eq 'kinky') {
         $response .= ' Now enter a location using !location. ';
         $response .= 'You can use actual locations, like London or Seattle. You can use fictional locations, like Minas Tirith or Draenor. ';
@@ -334,11 +349,11 @@ sub enter_role {
 }
 
 sub enter_location {
-    my ($self, $nick, $location) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
-    $user{location} = $location;
-    my $response = sprintf('Thank you. Your location has been set to %s.', $location);
+    $user{location} = join ' ', @arg;
+    my $response = "Thank you. Your location has been set to $user{location}.";
     if ($user{state} eq 'roled') {
         $response .= ' Now describe yourself using !description. ';
         $response .= 'This is a free-form field and you can enter as much or as little as you like.';
@@ -350,16 +365,17 @@ sub enter_location {
 }
 
 sub enter_description {
-    my ($self, $nick, $description) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
-    $user{description} = $description;
-    my $response = sprintf('Thank you. Your description has been set to %s.', $description);
+    $user{description} = join ' ', @arg;
+    my $response = "Thank you. Your description has been set to $user{description}.";
     if ($user{state} eq 'located') {
         $user{state} = 'pending';
         $response .= " We're all done here. Happy perving!";
         my $message = sprintf('%s has created a profile for your viewing pleasure!', $nick);
         $self->{IRC}->yield(privmsg => $self->{options}{botchan} => $message);
+        $self->save_user($nick, %user);
         $self->emit_event('profile_found', $nick);
     }
     $self->{IRC}->yield(privmsg => $nick => $response);
