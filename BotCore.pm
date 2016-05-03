@@ -58,7 +58,7 @@ sub respond {
         $self->{IRC}->yield(notice => $nick => $message);
     }
     else {
-        $self->{IRC}->yield(privmsg => $self->{options}{botchan} => $message);
+        $self->{IRC}->yield(privmsg => $where => $message);
     }
     return 1;
 }
@@ -229,6 +229,27 @@ sub heartbeat {
     my $online = keys %{$self->{users}};
 }
 
+sub onotice {
+    my ($self, $message, $target) = @_;
+    $self->debug("Sending $message to $self->{options}{helper_prefix}$self->{options}{botchan}.");
+    $self->{IRC}->yield(notice => $self->{options}{helper_prefix} . $target => $message);
+    return 1;
+}
+
+sub where_ok {
+    my ($self, $where) = @_;
+    if ($where eq $self->{options}{botchan}) {
+        return 1;
+    }
+    if ($where eq $self->{options}{adminchan}) {
+        return 1;
+    }
+    if ($where eq $self->{IRC}{INFO}{RealNick}) {
+        return 1;
+    }
+    return 0;
+}
+
 sub parse {
     my ($self, $sender, $who, $what, @target) = @_[OBJECT, SENDER, ARG0, ARG2, ARG1];
     my $where = $target[0][0];
@@ -250,115 +271,7 @@ sub parse {
         else {
             @arg = undef;
         }
-        $self->debug(Dumper(\@arg));
         $self->emit_event("user_command_$keyword", $nick, $where, $command, $chanop, $owner, @arg);
-    }
-    switch ($command) {
-        case "!approve" {
-            my $victim = shift @arg;
-            my $message;
-            if (!$chanop) {
-                $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
-            }
-            else {
-                $self->emit_event('reload_user', $victim);
-                if (!defined $self->get_user($victim)) {
-                    $message = "Oh dear, I'm afraid I simply can't find that profile.";
-                }
-                else {
-                    my %user = $self->get_user($victim);
-                    if ($user{state} eq 'approved') {
-                        $message = "Approving a profile twice would be the height of folly.";
-                    }
-                    else {
-                        $message = "As you wish, I will sneer at them with slightly less contempt in the future.";
-                        $self->emit_event('modify_state', $victim, 'approved');
-                        $self->{IRC}->yield(mode => $self->{options}{botchan} => '+v' => $victim);
-                    }
-                }
-            }
-            $self->respond($message, $where, $nick);
-        }
-        case "!unapprove" {
-            my $victim = shift @arg;
-            my $message;
-            if (!$chanop) {
-                $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
-            }
-            else {
-                $self->emit_event('reload_user', $victim);
-                if (!defined $self->get_user($victim)) {
-                    $message = "Oh dear, I'm afraid I simply can't find that profile.";
-                }
-                else {
-                    my %user = $self->get_user($victim);
-                    if ($user{state} ne 'approved') {
-                        $message = "I'm afraid they are quite out of approbation to remove.";
-                    }
-                    else {
-                        $message = "Excellent choice. They are quite the rascal, are they not?";
-                        $self->emit_event('modify_state', $victim, 'pending');
-                        $self->{IRC}->yield(mode => $self->{options}{botchan}, '-v', $victim);
-                    }
-                }
-            }
-            $self->respond($message, $where, $nick);
-        }
-        case "!lock" {
-            my $victim = shift @arg;
-            my $message;
-            if (!$chanop) {
-                $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
-            }
-            else {
-                $self->emit_event('reload_user', $victim);
-                if (!defined $self->get_user($victim)) {
-                    $message = "Oh dear, I'm afraid I simply can't find that profile.";
-                }
-                else {
-                    my %user = $self->get_user($victim);
-                    if ($user{state} eq 'locked') {
-                        $message = "I'm worried the key might break if I try to lock that profile again.";
-                    }
-                    else {
-                        $message = "I've notified General Farthingworth that $victim is to be held incommunicado until further notice.";
-                        $self->emit_event('modify_state', $victim, 'locked');
-                    }
-                }
-            }
-            $self->respond($message, $where, $nick);
-        }
-        case "!delete" {
-            my $victim = shift @arg;
-            my $message;
-            if (!$chanop) {
-                $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
-            }
-            else {
-                $self->emit_event('reload_user', $victim);
-                if (!defined $self->get_user($victim)) {
-                    $message = "Oh dear, I'm afraid I simply can't find that profile.";
-                }
-                else {
-                    $message = "Splendid, I shall see $victim to the door post haste. And good riddance.";
-                    $self->emit_event('delete_user', $victim);
-                    $self->{IRC}->yield(mode => $self->{options}{botchan} => '-v' => $victim);
-                    delete $self->{users}{lc $victim};
-                }
-            }
-            $self->respond($message, $where, $nick);
-        }
-        case "!rules" {
-            my $victim = shift @arg;
-            my $message = "The rules for $self->{options}{botchan} can be found at $self->{options}{rules_url}";
-            $self->respond($message, $where, $nick);
-        }
-        case "!jeeves" {
-            my $message = "Yes, rather. A dreadful situation. I have summoned the gendarmes.";
-            my $helptext = join ' ', @arg;
-            $self->respond($message, $where, $nick);
-            $self->{IRC}->yield(notice => $self->{options}{helper_prefix} . $self->{options}{botchan} => "$nick is seeking assistance: $helptext");
-        }
     }
 }
 1;

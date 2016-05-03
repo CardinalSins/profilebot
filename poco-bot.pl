@@ -80,6 +80,7 @@ sub on_connect {
     $BotCore->{kernel} = $kernel;
     $BotCore->emit_event('connect');
     $irc->yield( join => $opts{botchan} );
+    $irc->yield( join => $opts{adminchan} );
     print "Connected, going to background\n";
 }
 

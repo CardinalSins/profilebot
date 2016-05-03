@@ -22,6 +22,21 @@ sub register_handlers {
     $BotCore->register_handler('user_command_colors', \&BotCore::Modules::General::show_colors);
 }
 
+sub command_rules {
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my $message = "The rules for $self->{options}{botchan} can be found at $self->{options}{rules_url}";
+    $self->respond($message, $where, $nick);
+}
+
+sub command_jeeves {
+    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my $message = "Yes, rather. A dreadful situation. I have summoned the gendarmes.";
+    my $helptext = join ' ', @arg;
+    $self->respond($message, $where, $nick);
+    $self->onotice("$nick is seeking assistance: $helptext", $self->{options}{botchan});
+    $self->onotice("$nick is seeking assistance: $helptext", $self->{options}{adminchan});
+}
+
 sub command_edit {
     my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
     my $fg = $self->{colors}{$self->{options}{variable_color}};
