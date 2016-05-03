@@ -90,6 +90,7 @@ sub show_profile_commands {
     my $fg = $self->{colors}{$self->{options}{variable_color}};
     my $text = $self->{colors}{$self->{options}{text_color}};
     $self->{IRC}->yield(notice => $nick => "====== Profile Commands supported by PoCoProfileBot v1.0.0 ======");
+    $self->{IRC}->yield(notice => $nick => "$fg!restrict$text:        Toggle restricting your profile to users with profiles only.");
     $self->{IRC}->yield(notice => $nick => "$fg!setup$text:           Start the profile creation process.");
     $self->{IRC}->yield(notice => $nick => "$fg!age$text:             Set your age. Initiates the next step, if creating a profile.");
     $self->{IRC}->yield(notice => $nick => "$fg!gender$text:          Set your gender identity. Initiates the next step, if creating a profile.");
@@ -113,7 +114,6 @@ sub show_commands {
     $self->{IRC}->yield(notice => $nick => "$fg!colours$text:           Show which colour names the bot supports.");
     $self->{IRC}->yield(notice => $nick => "$fg!rules$text:             Show the channel rules.");
     $self->{IRC}->yield(notice => $nick => "$fg!jeeves$text:            Alert the channel ops that you need assistance.");
-    $self->{IRC}->yield(notice => $nick => "$fg!restrict$text:          Toggle restricting your profile to users with profiles only.");
     $self->{IRC}->yield(notice => $nick => "$fg!profilecommands$text:   Show the profile-related commands.");
     if ($botadmin || $owner) {
         $self->{IRC}->yield(notice => $nick => "$og!opcommands$text:        Show only the op commands.");
