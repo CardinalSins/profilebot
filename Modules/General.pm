@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 package BotCore::Modules::General;
+use IRC::Utils qw(NORMAL BOLD UNDERLINE REVERSE ITALIC FIXED WHITE BLACK BLUE GREEN RED BROWN PURPLE ORANGE YELLOW LIGHT_GREEN TEAL LIGHT_CYAN LIGHT_BLUE PINK GREY LIGHT_GREY);
 
 sub new {
     my $class = shift;
