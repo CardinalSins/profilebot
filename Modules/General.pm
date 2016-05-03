@@ -113,8 +113,7 @@ sub show_commands {
     $self->{IRC}->yield(notice => $nick => "$fg!colours$text:           Show which colour names the bot supports.");
     $self->{IRC}->yield(notice => $nick => "$fg!rules$text:             Show the channel rules.");
     $self->{IRC}->yield(notice => $nick => "$fg!jeeves$text:            Alert the channel ops that you need assistance.");
-    $self->{IRC}->yield(notice => $nick => "$fg!restrict$text:          Restrict viewing your profile to users with profiles only.");
-    $self->{IRC}->yield(notice => $nick => "$fg!unrestrict$text:        Remove the restriction from your profile.");
+    $self->{IRC}->yield(notice => $nick => "$fg!restrict$text:          Toggle restricting your profile to users with profiles only.");
     $self->{IRC}->yield(notice => $nick => "$fg!profilecommands$text:   Show the profile-related commands.");
     if ($botadmin || $owner) {
         $self->{IRC}->yield(notice => $nick => "$og!opcommands$text:        Show only the op commands.");
