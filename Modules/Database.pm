@@ -26,8 +26,16 @@ sub reload_pending {
     my $self = shift;
     $self->{pending} = [];
     my $dbh = $self->{DBH};
-    my $query = "SELECT name FROM user WHERE state = 'pending' LIMIT $self->{options}{show_pending}";
+    my $query = "SELECT COUNT(*) as count FROM user WHERE state = 'pending'";
     my $statement = $dbh->prepare($query) or do{ $self->debug($!); return 0; };
+    $statement->execute() or do{ $self->debug($!); return 0; };
+    my $pc = $statement->fetchrow_hashref();
+    my %pendcnt = %{$pc};
+    my $pending = $pendcnt{count};
+    $self->{pending_count} = $pending;
+    $statement->execute() or do{ $self->debug($!); return 0; };
+    $query = "SELECT name FROM user WHERE state = 'pending' LIMIT $self->{options}{show_pending}";
+    $statement = $dbh->prepare($query) or do{ $self->debug($!); return 0; };
     $statement->execute() or do{ $self->debug($!); return 0; };
     while (my $row = $statement->fetchrow_hashref()) {
         my %user = %{$row};

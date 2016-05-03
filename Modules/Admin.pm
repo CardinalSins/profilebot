@@ -34,7 +34,7 @@ sub command_pending {
     return unless $owner || $chanop;
     $self->emit_event('load_pending');
     my $fg = $self->{colors}{$self->{options}{variable_color}};
-    my $message = "Users pending approval: $fg" . join "$self->{colors}{normal}, $fg", @{$self->{pending}};
+    my $message = "$self->{pending_count} users await approval. First $self->{options}{show_pending}: $fg" . join "$self->{colors}{normal}, $fg", @{$self->{pending}};
     $self->respond($message, $where, $nick);
 }
 
