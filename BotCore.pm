@@ -170,8 +170,6 @@ sub userjoin {
 
 sub userkicked {
     my ($self, $where, $nick) = @_[OBJECT, ARG1, ARG2];
-    $self->{users}{$nick}{online} = 0;
-    $self->saveuser($nick);
     delete $self->{users}{lc $nick};
     return 1;
 }
@@ -422,7 +420,7 @@ sub parse {
                     $message = "Oh dear, I'm afraid I simply can't find that profile.";
                 }
                 else {
-                    $message = "Splendid, I shall see them to the door post haste.";
+                    $message = "Splendid, I shall see $victim to the door post haste. And good riddance.";
                     $self->emit_event('delete_user', $victim);
                     delete $self->{users}{lc $victim};
                 }
