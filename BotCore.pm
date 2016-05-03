@@ -7,6 +7,7 @@ use Data::Dumper;
 use Switch;
 use POE;
 use YAML;
+use JSON;
 use IRC::Utils qw(NORMAL BOLD UNDERLINE REVERSE ITALIC FIXED WHITE BLACK BLUE GREEN RED BROWN PURPLE ORANGE YELLOW LIGHT_GREEN TEAL LIGHT_CYAN LIGHT_BLUE PINK GREY LIGHT_GREY);
 
 $Data::Dumper::Indent = 1;
@@ -65,11 +66,36 @@ sub emit_event {
 sub readconfig {
     print "Loading options... ";
     my $self = shift;
-    if (! -e ".config.yaml") {
-        print("Error: Cannot find .config.yaml. Copy it to this directory, please.",1);
+    if (! -e ".config.json") {
+        print("Error: Cannot find .config.json. Copy it to this directory, please.",1);
     }
     else {
-        $self->{options} = YAML::LoadFile(".config.yaml");
+        my $config;
+        open (FH, '<.config.json');
+        while (<FH>) {
+            $config .= $_;
+        }
+        # $self->debug($config);
+        %{$self->{options}} = %{decode_json($config)};
+        # $self->debug(Dumper($self->{options}));
+        close FH;
+    }
+    print "Done!\n";
+}
+
+sub saveconfig {
+    print "Saving options... ";
+    my ($self, %options) = @_;
+    %{$self->{options}} = %options;
+    if (! -e ".config.json") {
+        print("Error: Cannot find .config.json. Copy it to this directory, please.",1);
+    }
+    else {
+        open (FH, '>.config.json');
+        print FH encode_json($self->{options});
+        close FH;
+        # YAML::DumpFile(".config.json", %options);
+        $self->readconfig();
     }
     print "Done!\n";
 }
@@ -194,20 +220,21 @@ sub parse {
     my $command = lc shift @arg;
     my $poco = $sender->get_heap();
     my $chanop = $poco->is_channel_operator($self->{options}{botchan}, $nick);
-    switch ($command) {
-        case "!setup" {
-            return if defined $self->get_user($nick);
-            my %user;
-            $user{name} = $nick;
-            $user{host} = split /@/, $userhost;
-            $user{state} = 'new';
-            $user{created} = time();
-            $user{seen} = time();
-            $user{updated} = time();
-            $user{restricted} = '1';
-            $self->save_user($nick, %user);
-            $self->emit_event('user_created', $nick);
+    my $owner = ($nick eq $self->{options}{owner});
+    return if $nick =~ /^(Cuff\d+|Guest\d+|Perv\d+|mib_.+)/;
+    if ($what =~ /^!([^ ]+) ?(.*)/) {
+        my $keyword = $1;
+        my @arg;
+        if (defined $2) {
+            @arg = split / /, $2;
         }
+        else {
+            @arg = undef;
+        }
+        $self->debug(Dumper(\@arg));
+        $self->emit_event("user_command_$keyword", $nick, $where, $command, $chanop, $owner, @arg);
+    }
+    switch ($command) {
         case '!age' {
             my $age = join ' ', @arg;
             $self->emit_event('command_age', $nick, $age);
