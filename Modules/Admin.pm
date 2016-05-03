@@ -37,7 +37,9 @@ sub command_delete {
             $message = "Oh dear, I'm afraid I simply can't find that profile.";
         }
         else {
-            $self->onotice("$victim deleted by $nick.", $where);
+            my $fg = $self->{colors}{$self->{options}{variable_color}};
+            my $text = $self->{colors}{$self->{options}{text_color}};
+            $self->onotice("$fg$victim$text deleted by $fg$nick$text.", $where);
             $self->emit_event('delete_user', $victim);
             $self->{IRC}->yield(mode => $self->{options}{botchan} => '-v' => $victim);
             delete $self->{users}{lc $victim};
