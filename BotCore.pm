@@ -45,6 +45,18 @@ sub loadmodules {
     print "Done!\n";
 }
 
+sub respond {
+    my ($self, $message, $where, $nick) = @_;
+    my $recipient;
+    if ($where eq $self->{IRC}{INFO}{RealNick}) {
+        $self->{IRC}->yield(notice => $nick => $message);
+    }
+    else {
+        $self->{IRC}->yield(privmsg => $self->{options}{botchan} => $message);
+    }
+    return 1;
+}
+
 sub register_handler {
     my ($self, $event, $handler) = @_;
     push @{$self->{events}{$event}}, \&$handler;
@@ -235,59 +247,13 @@ sub parse {
         $self->emit_event("user_command_$keyword", $nick, $where, $command, $chanop, $owner, @arg);
     }
     switch ($command) {
-        case '!age' {
-            my $age = join ' ', @arg;
-            $self->emit_event('command_age', $nick, $age);
-        }
         case '!edit' {
             my $message = "That command does not exist. Just update the value you want to update. Use @{[LIGHT_BLUE]}!profilecommands@{[NORMAL]} to find out how.";
-            my $recipient;
-            if ($where eq $self->{IRC}{INFO}{RealNick}) {
-                $recipient = $nick;
-            }
-            else {
-                $recipient = $self->{options}{botchan};
-            }
-            $self->{IRC}->yield(privmsg => $recipient => $message)
+            $self->respond($message, $where, $nick);
         }
         case '!info' {
             my $message = "This is PoCoProfileBot v1.0.0, written in less than 48 hours by CardinalSins.";
-            my $recipient;
-            if ($where eq $self->{IRC}{INFO}{RealNick}) {
-                $recipient = $nick;
-            }
-            else {
-                $recipient = $self->{options}{botchan};
-            }
-            $self->{IRC}->yield(privmsg => $recipient => $message)
-        }
-        case '!gender' {
-            my $gender = join ' ', @arg;
-            $self->emit_event('command_gender', $nick, $gender);
-        }
-        case '!orientation' {
-            my $orientation = join ' ', @arg;
-            $self->emit_event('command_orientation', $nick, $orientation);
-        }
-        case '!limits' {
-            my $limits = join ' ', @arg;
-            $self->emit_event('command_limits', $nick, $limits);
-        }
-        case '!kinks' {
-            my $kinks = join ' ', @arg;
-            $self->emit_event('command_kinks', $nick, $kinks);
-        }
-        case '!role' {
-            my $role = join ' ', @arg;
-            $self->emit_event('command_role', $nick, $role);
-        }
-        case '!location' {
-            my $location = join ' ', @arg;
-            $self->emit_event('command_location', $nick, $location);
-        }
-        case '!description' {
-            my $description = join ' ', @arg;
-            $self->emit_event('command_description', $nick, $description);
+            $self->respond($message, $where, $nick);
         }
         case '!restrict' {
             my $description = join ' ', @arg;
@@ -300,14 +266,7 @@ sub parse {
         case "!reload" {
             return unless $nick eq $self->{options}{owner};
             my $message = "Yes, effendi, it shall be done.";
-            my $recipient;
-            if ($where eq $self->{IRC}{INFO}{RealNick}) {
-                $recipient = $nick;
-            }
-            else {
-                $recipient = $self->{options}{botchan};
-            }
-            $self->{IRC}->yield(privmsg => $recipient => $message);
+            $self->respond($message, $where, $nick);
             kill URG => $$;
         }
         case "!view" {
@@ -336,14 +295,7 @@ sub parse {
                     }
                 }
             }
-            my $recipient;
-            if ($where eq $self->{IRC}{INFO}{RealNick}) {
-                $recipient = $nick;
-            }
-            else {
-                $recipient = $self->{options}{botchan};
-            }
-            $self->{IRC}->yield(privmsg => $recipient => $message);
+            $self->respond($message, $where, $nick);
         }
         case "!unapprove" {
             my $victim = shift @arg;
@@ -368,14 +320,7 @@ sub parse {
                     }
                 }
             }
-            my $recipient;
-            if ($where eq $self->{IRC}{INFO}{RealNick}) {
-                $recipient = $nick;
-            }
-            else {
-                $recipient = $self->{options}{botchan};
-            }
-            $self->{IRC}->yield(privmsg => $recipient => $message);
+            $self->respond($message, $where, $nick);
         }
         case "!lock" {
             my $victim = shift @arg;
@@ -399,14 +344,7 @@ sub parse {
                     }
                 }
             }
-            my $recipient;
-            if ($where eq $self->{IRC}{INFO}{RealNick}) {
-                $recipient = $nick;
-            }
-            else {
-                $recipient = $self->{options}{botchan};
-            }
-            $self->{IRC}->yield(privmsg => $recipient => $message);
+            $self->respond($message, $where, $nick);
         }
         case "!delete" {
             my $victim = shift @arg;
@@ -422,29 +360,16 @@ sub parse {
                 else {
                     $message = "Splendid, I shall see $victim to the door post haste. And good riddance.";
                     $self->emit_event('delete_user', $victim);
+                    $self->{IRC}->yield(mode => $self->{options}{botchan} => '-v' => $victim);
                     delete $self->{users}{lc $victim};
                 }
             }
-            my $recipient;
-            if ($where eq $self->{IRC}{INFO}{RealNick}) {
-                $recipient = $nick;
-            }
-            else {
-                $recipient = $self->{options}{botchan};
-            }
-            $self->{IRC}->yield(privmsg => $recipient => $message);
+            $self->respond($message, $where, $nick);
         }
         case "!rules" {
             my $victim = shift @arg;
             my $message = "The rules for $self->{options}{botchan} can be found at $self->{options}{rules_url}";
-            my $recipient;
-            if ($where eq $self->{IRC}{INFO}{RealNick}) {
-                $recipient = $nick;
-            }
-            else {
-                $recipient = $self->{options}{botchan};
-            }
-            $self->{IRC}->yield(privmsg => $recipient => $message);
+            $self->respond($message, $where, $nick);
         }
         case "!profilecommands" {
             $self->{IRC}->yield(notice => $nick => "====== Profile Commands supported by PoCoProfileBot v1.0.0 ======");
@@ -483,14 +408,7 @@ sub parse {
         case "!jeeves" {
             my $message = "Yes, rather. A dreadful situation. I have summoned the gendarmes.";
             my $helptext = join ' ', @arg;
-            my $recipient;
-            if ($where eq $self->{IRC}{INFO}{RealNick}) {
-                $recipient = $nick;
-            }
-            else {
-                $recipient = $self->{options}{botchan};
-            }
-            $self->{IRC}->yield(privmsg => $recipient => $message);
+            $self->respond($message, $where, $nick);
             $self->{IRC}->yield(notice => $self->{options}{helper_prefix} . $self->{options}{botchan} => "$nick is seeking assistance: $helptext");
         }
     }

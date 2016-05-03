@@ -18,7 +18,7 @@ sub register_handlers {
 
 sub config_option {
     my ($self, $nick, $target, $command, $chanop, $owner, @arg) = @_;
-    return unless $chanop || $owner;
+    return unless $owner;
     my $config_option = shift @arg;
     my $config_value = join ' ', @arg;
     my %new_opts = %{$self->{options}};
