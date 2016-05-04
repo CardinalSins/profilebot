@@ -80,6 +80,8 @@ sub register_handler {
 
 sub emit_event {
     my ($self, $event, @params) = @_;
+    my ($package, $filename, $line) = caller;
+    $self->debug("$package::$event");
     if (!$self->{events}{$event}) {
         $self->debug("Event $event triggered but no handler defined.");
         return;
