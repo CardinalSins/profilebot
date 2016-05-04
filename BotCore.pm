@@ -6,9 +6,10 @@ use DBI;
 use Data::Dumper;
 use Switch;
 use POE;
-use YAML;
 use JSON;
 use IRC::Utils qw(NORMAL BOLD UNDERLINE REVERSE ITALIC FIXED WHITE BLACK BLUE GREEN RED BROWN PURPLE ORANGE YELLOW LIGHT_GREEN TEAL LIGHT_CYAN LIGHT_BLUE PINK GREY LIGHT_GREY);
+use POSIX qw(strftime);
+use utf8;
 
 $Data::Dumper::Indent = 1;
 
@@ -28,10 +29,21 @@ sub new {
     %{$self->{colors}} = %colors;
     $self->emit_event('load_pending');
     %{$self->{UNITS}} = (second => 1, minute => 60, hour => 3600, day => 86400, week => 604800, month => 2592000, year => 31536000);
-    open(my $pidfile,">.irpg.pid");
-    print $pidfile getpgrp(0) . "\n";
-    close $pidfile;
+    $self->register_handler('die', \&terminate);
     return $self;
+}
+
+sub terminate {
+    my $self = shift;
+    $self->debug("Dying.");
+    sleep 1;
+    $self->debug("Dead!");
+    kill TERM => $$;
+}
+
+sub versions {
+    my ($self, %versions) = @_;
+    %{$self->{version}} = %versions;
 }
 
 sub getopts { # Used by poco-bot.pl
@@ -46,7 +58,6 @@ sub get_color {
 
 sub loadmodules {
     my $self = shift;
-    print "Loading modules... ";
     opendir(my $moddir, $self->{options}{moduledir});
     while (my $file = readdir $moddir) {
         next if !($file =~ /\.pm$/);
@@ -58,12 +69,13 @@ sub loadmodules {
         $self->{modules}{$modname} = $modpack->new();
         $self->{modules}{$modname}->register_handlers($self);
     }
-    print "Done!\n";
+    $self->debug("Loading modules ... done!");
 }
 
 sub respond {
     my ($self, $message, $where, $nick) = @_;
     my $recipient;
+    $self->{heap}->{seen_traffic} = 1;
     if ($where eq $self->{IRC}{INFO}{RealNick}) {
         $self->{IRC}->yield(notice => $nick => $message);
     }
@@ -94,7 +106,6 @@ sub emit_event {
 }
 
 sub readconfig {
-    print "Loading options... ";
     my $self = shift;
     if (! -e ".config.json") {
         print("Error: Cannot find .config.json. Copy it to this directory, please.",1);
@@ -110,11 +121,10 @@ sub readconfig {
         # $self->debug(Dumper($self->{options}));
         close FH;
     }
-    print "Done!\n";
+    $self->debug("Loading options ... done!");
 }
 
 sub saveconfig {
-    print "Saving options... ";
     my ($self, %options) = @_;
     %{$self->{options}} = %options;
     if (! -e ".config.json") {
@@ -127,11 +137,10 @@ sub saveconfig {
         # YAML::DumpFile(".config.json", %options);
         $self->readconfig();
     }
-    print "Done!\n";
+    $self->debug("Saving options ... done!");
 }
 
 sub loadusers {
-    print "Loading users... ";
     my $self = shift;
     my $dbh = $self->{DBH};
     my $statement = $dbh->prepare("SELECT id, name, age, gender, orientation, role, location, kinks, limits, description, state, restricted, host, created, updated, seen FROM user");
@@ -143,7 +152,7 @@ sub loadusers {
         }
         %{$self->{users}{lc $user{name}}} = %user;
     }
-    print "Done!\n";
+    $self->debug("Loading users ... done!");
 }
 
 sub my_channel {
@@ -180,10 +189,12 @@ sub save_user {
 
 sub userpart {
     my ($self, $who, $where) = @_[OBJECT, ARG0, ARG1];
+    $self->{heap}->{seen_traffic} = 1;
     if ($where =~ /^#/) {
         return unless $self->my_channel($where);
     }
     my ($nick, undef) = split /!/, $who;
+    return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{seen} = time();
     $self->save_user($nick, %user);
@@ -194,6 +205,7 @@ sub userpart {
 
 sub userjoin {
     my ($self, $who, $where) = @_[OBJECT, ARG0, ARG1];
+    $self->{heap}->{seen_traffic} = 1;
     if ($where =~ /^#/) {
         return unless $self->my_channel($where);
     }
@@ -211,6 +223,7 @@ sub userjoin {
 
 sub userkicked {
     my ($self, $where, $nick) = @_[OBJECT, ARG1, ARG2];
+    $self->{heap}->{seen_traffic} = 1;
     delete $self->{users}{lc $nick};
     return 1;
 }
@@ -218,6 +231,7 @@ sub userkicked {
 sub nickchange {
     my ($self, $who, $newnick) = @_[OBJECT, ARG0, ARG1];
     my ($oldnick, undef) = split /!/, $who;
+    $self->{heap}->{seen_traffic} = 1;
     $self->emit_event('new_nick', $newnick);
     $self->emit_event('nick_change', $oldnick, $newnick);
     delete $self->{users}{lc $oldnick};
@@ -228,12 +242,13 @@ sub debug {
     (my $text = shift) =~ s/[\r\n]/ /g;
     my ($package, $filename, $line) = caller;
     my $die = shift;
+    my $timestamp = strftime "%Y-%m-%d %R:%S", localtime;
     if ($self->{options}{debug} || $self->{options}{verbose}) {
         open(my $debugger,">>$self->{options}{debugfile}") or do {
             print("Error: Cannot open debug file: $!");
             return;
         };
-        print $debugger scalar(localtime) . " $package.$line: $text\n";
+        print $debugger $timestamp . ": $package.$line: $text\n";
         close($debugger);
     }
     if ($die) { die("$text\n"); }
@@ -314,8 +329,9 @@ sub get_message {
 
 sub parse {
     my ($self, $sender, $who, $what, @target) = @_[OBJECT, SENDER, ARG0, ARG2, ARG1];
+    $self->{heap}->{seen_traffic} = 1;
     my $where = $target[0][0];
-    print "$who said $what in $where\n";
+    $self->debug("$who said $what in $where");
     my $irc = $self->{IRC};
     my ($nick, $userhost) = split /!/, $who;
     my @arg = split / /, $what;

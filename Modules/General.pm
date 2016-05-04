@@ -3,6 +3,7 @@ use warnings;
 
 package BotCore::Modules::General;
 use Data::Dumper;
+use utf8;
 
 sub new {
     my $class = shift;
@@ -48,7 +49,7 @@ sub command_edit {
 
 sub command_info {
     my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
-    my $message = $self->{options}{info_string};
+    my $message = "I am $self->{version}{name} v$self->{version}{version}, written by $self->{version}{author}. My genome can be found at $self->{version}{homepage}";
     $self->respond($message, $where, $nick);
     return 1;
 }

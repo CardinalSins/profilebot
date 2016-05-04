@@ -3,6 +3,7 @@ use warnings;
 
 package BotCore::Modules::Database;
 use Data::Dumper;
+use utf8;
 
 sub new {
     my $class = shift;

@@ -4,6 +4,7 @@ use warnings;
 package BotCore::Modules::Admin;
 use Data::Dumper;
 use Switch;
+use utf8;
 
 sub new {
     my $class = shift;
@@ -15,6 +16,7 @@ sub new {
 sub register_handlers {
     my ($self, $BotCore) = @_;
     $BotCore->register_handler('admin_notice', \&BotCore::Modules::Admin::admin_notice);
+    $BotCore->register_handler('user_command_die', \&BotCore::Modules::Admin::command_perish);
     $BotCore->register_handler('user_command_config', \&BotCore::Modules::Admin::config_option);
     $BotCore->register_handler('user_command_pending', \&BotCore::Modules::Admin::command_pending);
     $BotCore->register_handler('user_command_reload', \&BotCore::Modules::Admin::command_reload);
@@ -24,6 +26,15 @@ sub register_handlers {
     $BotCore->register_handler('user_command_delete', \&BotCore::Modules::Admin::command_delete);
     $BotCore->register_handler('user_command_unlock', \&BotCore::Modules::Admin::command_approve);
     $BotCore->register_handler('user_command_message', \&BotCore::Modules::Admin::command_message);
+}
+
+sub command_perish {
+    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    return unless $owner or $botadmin;
+    $self->{IRC}->yield(ctcp => $where => "ACTION salutes $nick.");
+    my $message = "When you're wounded and left on Afghanistan's plains, And the women come out to cut up what remains, Jest roll to your rifle and blow out your brains. An' go to your Gawd like a soldier.";
+    $self->{IRC}->yield(quit => $message);
+    $self->emit_event('die');
 }
 
 sub admin_notice {

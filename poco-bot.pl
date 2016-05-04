@@ -8,6 +8,7 @@
 
 use warnings;
 use strict;
+use utf8;
 use Data::Dumper;
 $Data::Dumper::Indent = 1;
 
@@ -16,95 +17,129 @@ use POE qw(Component::IRC::State);
 # use POE::Component::IRC;
 use BotCore;
 use Module::Refresh;
+use Proc::Fork;
 
-# Thanks to encryptio, a useful tool for debugging parameters: print "$_: $_[$_]\n" for 0 .. $#_; die;
-# Create the component that will represent an IRC network.
-my ($irc) = POE::Component::IRC::State->spawn(Flood => 1, UseSSL => 1);
-my $BotCore = new BotCore($irc);
 
-$irc->{modrefresh} = Module::Refresh->new();
+run_fork {
+    child {
+        our ($irc) = POE::Component::IRC::State->spawn(Flood => 1, UseSSL => 1);
+        our $BotCore = new BotCore($irc);
+        sub bot_start {
+            # The bot session has started. Select a nickname. Connect to a server.
+            my $kernel  = $_[KERNEL];
+            my $heap    = $_[HEAP];
+            my $session = $_[SESSION];
+            our $BotCore;
+            ($BotCore->{kernel}, $BotCore->{heap}, $BotCore->{session}) = ($kernel, $heap, $session);
+            my %opts = $BotCore->getopts();
+            $kernel->sig(URG => 'signal');
+            $kernel->delay( heartbeat => $opts{self_clock} );
+            $irc->yield( register => "all" );
 
-# Create the bot session.  The new() call specifies the events the bot
-# knows about and the functions that will handle those events.
-POE::Session->create(
-    object_states => [
-        $BotCore => {
-            heartbeat  => 'heartbeat',
-            irc_nick   => 'nickchange',
-            irc_join   => 'userjoin',
-            irc_part   => 'userpart',
-            irc_quit   => 'userpart',
-            irc_kick   => 'userkicked',
-            irc_public => 'parse',
-            irc_msg    => 'parse',
-        },
-    ],
-    inline_states => {
-        irc_disconnected => \&bot_reconnect,
-        irc_error        => \&bot_reconnect,
-        irc_socketerr    => \&bot_reconnect,
-        _start           => \&bot_start,
-        irc_001          => \&on_connect,
-        signal           => \&reload_mods,
-    },
-    heap => { irc => $irc },
-);
-
-my $version = "v1.0.0";
-
-# The bot session has started.  Register this bot with the "magnet"
-# IRC component.  Select a nickname.  Connect to a server.
-sub bot_start {
-    my $kernel  = $_[KERNEL];
-    my $heap    = $_[HEAP];
-    my $session = $_[SESSION];
-    my %opts = $BotCore->getopts();
-    $kernel->sig(URG => 'signal');
-    $kernel->delay( heartbeat => $opts{self_clock} );
-    $irc->yield( register => "all" );
-
-    $irc->yield( connect =>
-          { Nick => $opts{irc}{nick},
-            Username => $opts{irc}{user},
-            Ircname  => $opts{irc}{real},
-            Server   => $opts{irc}{server},
-            Port     => $opts{irc}{port},
-          }
-    );
-}
-
-# The bot has successfully connected to a server.  Join a channel.
-sub on_connect {
-    my ( $kernel, $heap ) = @_[ KERNEL, HEAP ];
-    my %opts = $BotCore->getopts();
-    $BotCore->{kernel} = $kernel;
-    $BotCore->emit_event('connect');
-    my @channels = @{$opts{irc}{channels}};
-    for my $cn (0..$#channels) {
-        $BotCore->debug(Dumper(\$channels[$cn]));
-        my %channel = %{$channels[$cn]};
-        if (defined $channel{key}) {
-            $irc->yield( join => $channel{name} => $channel{key} );
+            $irc->yield( connect =>
+                  { Nick => $opts{irc}{nick},
+                    Username => $opts{irc}{user},
+                    Ircname  => $opts{irc}{real},
+                    Server   => $opts{irc}{server},
+                    Port     => $opts{irc}{port},
+                  }
+            );
         }
-        else {
-            $irc->yield( join => $channel{name} );
+
+        sub terminate {
+            $BotCore->debug('Terminating.');
+            $poe_kernel->stop();
+            exit 0;
         }
+
+        sub bot_do_autoping {
+            my ($kernel, $heap) = @_[KERNEL, HEAP];
+            $kernel->post(poco_irc => userhost => "my-nickname")
+                unless $heap->{seen_traffic};
+            $heap->{seen_traffic} = 0;
+            $kernel->delay(autoping => 150);
+        }
+
+        # The bot has successfully connected to a server.  Join a channel.
+        sub on_connect {
+            my ( $kernel, $heap ) = @_[ KERNEL, HEAP ];
+            our $BotCore;
+            my %opts = $BotCore->getopts();
+            $BotCore->emit_event('connect');
+            my @channels = @{$opts{irc}{channels}};
+            for my $cn (0..$#channels) {
+                my %channel = %{$channels[$cn]};
+                if (defined $channel{key}) {
+                    $irc->yield( join => $channel{name} => $channel{key} );
+                }
+                else {
+                    $irc->yield( join => $channel{name} );
+                }
+            }
+            $BotCore->debug("Connected, going to background");
+        }
+
+        sub bot_reconnect {
+            my $kernel = $_[KERNEL];
+            $kernel->delay( autoping  => undef );
+            $kernel->delay( connect  => 10 );
+        }
+
+        sub reload_mods {
+            no warnings 'redefine';
+            my ($kernel, $heap) = @_[KERNEL, HEAP];
+            $heap->{irc}->{modrefresh}->refresh();
+            $kernel->sig_handled();
+            use warnings;
+        }
+        my %version = ( version => '1.0.0',
+                        name => 'PoCoProfileBot',
+                        author => 'CardinalSins',
+                        homepage => 'https://github.com/CardinalSins/profilebot' );
+        $BotCore->versions(%version);
+
+        $irc->{modrefresh} = Module::Refresh->new();
+
+        POE::Session->create(
+            object_states => [
+                $BotCore => {
+                    heartbeat  => 'heartbeat',
+                    irc_nick   => 'nickchange',
+                    irc_join   => 'userjoin',
+                    irc_part   => 'userpart',
+                    irc_quit   => 'userpart',
+                    irc_kick   => 'userkicked',
+                    irc_public => 'parse',
+                    irc_msg    => 'parse',
+                },
+            ],
+            inline_states => {
+                irc_disconnected => \&bot_reconnect,
+                irc_error        => \&bot_reconnect,
+                irc_socketerr    => \&bot_reconnect,
+                _start           => \&bot_start,
+                irc_001          => \&on_connect,
+                signal           => \&reload_mods,
+            },
+            heap => { irc => $irc },
+        );
+        $poe_kernel->run();
     }
-    print "Connected, going to background\n";
-}
-
-sub bot_reconnect {
-    my $kernel = $_[KERNEL];
-    $kernel->delay( connect  => 60 );
-}
-
-sub reload_mods {
-    no warnings 'redefine';
-    my ($kernel, $heap) = @_[KERNEL, HEAP];
-    $heap->{irc}->{modrefresh}->refresh();
-    $kernel->sig_handled();
-    use warnings;
-}
-
-$poe_kernel->run();
-exit 0;
+    parent {
+        my $child_pid = shift;
+        # waitpid $child_pid, 0;
+        open(my $pidfile,">.bot.pid");
+        print $pidfile $child_pid . "\n";
+        close $pidfile;
+    }
+    retry {
+        my $attempts = shift;
+        # what to do if fork() fails:
+        # return true to try again, false to abort
+        return if $attempts > 5;
+        sleep 1, return 1;
+    }
+    error {
+        die "Couldn't fork: $!\n";
+    }
+};

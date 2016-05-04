@@ -4,3 +4,4 @@ debug.log
 .config.yaml.bak
 .config.json
 .config.json.bak
+.bot.pid

@@ -2,6 +2,8 @@ use strict;
 use warnings;
 
 package BotCore::Modules::__Template__;
+use Data::Dumper;
+use utf8;
 
 sub new {
     my $class = shift;
