@@ -56,7 +56,12 @@ sub get_color {
     if (!defined $self->{options}{colors}{$color}) {
         return $self->{colors}{normal};
     }
-    return $self->{options}{colors}{$color};
+    my %colors = %{$self->{colors}};
+    my $color_name = $self->{options}{colors}{$color};
+    if (defined $colors{$color_name}) {
+        return $colors{$color_name};
+    }
+    return $self->{colors}{normal};
 }
 
 sub loadmodules {
