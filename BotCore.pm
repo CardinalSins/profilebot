@@ -117,7 +117,7 @@ sub readconfig {
             $config .= $_;
         }
         # $self->debug($config);
-        %{$self->{options}} = %{decode_json($config)};
+        %{$self->{options}} = %{JSON->new->utf8(1)->decode($config)};
         # $self->debug(Dumper($self->{options}));
         close FH;
     }
@@ -132,7 +132,7 @@ sub saveconfig {
     }
     else {
         open (FH, '>.config.json');
-        print FH encode_json($self->{options});
+        print FH JSON->new->utf8(1)->pretty(1)->encode($self->{options});
         close FH;
         # YAML::DumpFile(".config.json", %options);
         $self->readconfig();

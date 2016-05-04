@@ -18,6 +18,7 @@ sub register_handlers {
     $BotCore->register_handler('admin_notice', \&BotCore::Modules::Admin::admin_notice);
     $BotCore->register_handler('user_command_die', \&BotCore::Modules::Admin::command_perish);
     $BotCore->register_handler('user_command_config', \&BotCore::Modules::Admin::config_option);
+    $BotCore->register_handler('user_command_confdel', \&BotCore::Modules::Admin::config_delete);
     $BotCore->register_handler('user_command_pending', \&BotCore::Modules::Admin::command_pending);
     $BotCore->register_handler('user_command_reload', \&BotCore::Modules::Admin::command_reload);
     $BotCore->register_handler('user_command_ok', \&BotCore::Modules::Admin::command_approve);
@@ -148,6 +149,18 @@ sub config_option {
     my %new_opts = %{$self->{options}};
     $new_opts{$config_option} = $config_value;
     $self->saveconfig(%new_opts);
+    return 1;
+}
+
+sub config_delete {
+    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    return unless $self->where_ok($where);
+    return unless $owner;
+    my $config_option = shift @arg;
+    return unless defined $self->{options}{$config_option};
+    my %options = %{$self->{options}};
+    delete $options{$config_option};
+    $self->saveconfig(%options);
     return 1;
 }
 
