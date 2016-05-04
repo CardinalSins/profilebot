@@ -43,6 +43,7 @@ sub admin_notice {
     my @chans = @{$self->{options}{irc}{channels}};
     for my $cn (0..$#chans) {
         my %channel = %{$chans[$cn]};
+        $self->debug("Sending to $channel{helpers}$channel{name}: $message");
         $self->onotice($message, $channel{helpers}, $channel{name});
     }
 }
@@ -74,7 +75,11 @@ sub command_delete {
         else {
             my $fg = $self->get_color('variables');
             my $text = $self->get_color('text');
-            $self->emit_event('admin_notice', "$fg$victim$text deleted by $fg$nick$text.");
+            my %tpl_vars = (victim => $fg . $victim . $text,
+                            nick => $fg . $nick . $text);
+            my $message = $self->get_message('op_deleted_user', %tpl_vars);
+            $self->debug($message);
+            $self->emit_event('admin_notice', $message);
             $self->emit_event('delete_user', $victim);
             map { $self->{IRC}->yield(mode => $_ => '-v' => $victim) } $self->my_channels();
             delete $self->{users}{lc $victim};

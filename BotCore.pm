@@ -53,7 +53,10 @@ sub getopts { # Used by poco-bot.pl
 
 sub get_color {
     my ($self, $color) = @_;
-    return (defined $self->{colors}{$self->{options}{colors}{$color}} ? $self->{colors}{$self->{options}{colors}{$color}} : $self->{colors}{normal});
+    if (!defined $self->{options}{colors}{$color}) {
+        return $self->{colors}{normal};
+    }
+    return $self->{options}{colors}{$color};
 }
 
 sub loadmodules {
@@ -116,9 +119,7 @@ sub readconfig {
         while (<FH>) {
             $config .= $_;
         }
-        # $self->debug($config);
         %{$self->{options}} = %{JSON->new->utf8(1)->decode($config)};
-        # $self->debug(Dumper($self->{options}));
         close FH;
     }
     $self->debug("Loading options ... done!");
@@ -264,6 +265,7 @@ sub heartbeat {
 
 sub onotice {
     my ($self, $message, $prefix, $target) = @_;
+    $self->debug("Sending to $prefix$target: $message");
     $self->{IRC}->yield(notice => $prefix . $target => $message);
     return 1;
 }
@@ -320,11 +322,22 @@ sub is_chanop {
 
 sub get_message {
     my ($self, $key) = @_;
-    $self->debug(Dumper(\$self->{languages}));
-    if (defined $self->{languages}{$self->{options}{language}}{$key}) {
-        return $self->{languages}{$self->{options}{language}}{$key};
+    my $language = $self->{options}{language};
+    my %languages = %{$self->{options}{languages}};
+    my $message;
+    if (defined $languages{$language}{$key}) {
+        $message = $languages{$language}{$key};
     }
-    return 'MESSAGE_' . uc $key;
+    else {
+        $message = undef;
+    }
+    if (@_) {
+        my %tpl_vals = @_;
+        for my $key (keys %tpl_vals) {
+            $message =~ s/{$key}/$tpl_vals{$key}/;
+        }
+    }
+    return defined $message ? $message : 'MESSAGE_' . uc $key;
 }
 
 sub parse {
