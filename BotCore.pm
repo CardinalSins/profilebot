@@ -18,7 +18,7 @@ sub new {
     bless($self, $class);
     $self->readconfig();
     $self->{IRC} = shift;
-    $self->{DBH} = DBI->connect("dbi:mysql:dbname=$self->{options}{dbname}", $self->{options}{dbuser}, $self->{options}{dbpass});
+    $self->{DBH} = DBI->connect("dbi:mysql:dbname=$self->{options}{database}{name}", $self->{options}{database}{user}, $self->{options}{database}{pass});
     $self->loadusers();
     $self->loadmodules();
     my %colors = ( normal => NORMAL, bold => BOLD, underline => UNDERLINE, reverse => REVERSE, italic => ITALIC, fixed => FIXED,
@@ -32,6 +32,16 @@ sub new {
     print $pidfile getpgrp(0) . "\n";
     close $pidfile;
     return $self;
+}
+
+sub getopts { # Used by poco-bot.pl
+    my $self = shift;
+    return %{$self->{'options'}};
+}
+
+sub get_color {
+    my ($self, $color) = @_;
+    return (defined $self->{colors}{$self->{options}{colors}{$color}} ? $self->{colors}{$self->{options}{colors}{$color}} : $self->{colors}{normal});
 }
 
 sub loadmodules {
@@ -134,6 +144,17 @@ sub loadusers {
     print "Done!\n";
 }
 
+sub my_channel {
+    my ($self, $where) = @_;
+    my @conf_channels = @{$self->{options}{irc}{channels}};
+    for my $i (0..$#conf_channels) {
+        my %channel = %{$conf_channels[$i]};
+        if (lc $channel{name} eq lc $where) {
+            return 1;
+        }
+    }
+}
+
 sub mkpass {
     my $self = shift;
     my ($password, $salt) = @_;
@@ -158,7 +179,7 @@ sub save_user {
 sub userpart {
     my ($self, $who, $where) = @_[OBJECT, ARG0, ARG1];
     if ($where =~ /^#/) {
-        return unless lc $where eq lc $self->{options}{botchan};
+        return unless $self->my_channel($where);
     }
     my ($nick, undef) = split /!/, $who;
     my %user = $self->get_user($nick);
@@ -172,7 +193,7 @@ sub userpart {
 sub userjoin {
     my ($self, $who, $where) = @_[OBJECT, ARG0, ARG1];
     if ($where =~ /^#/) {
-        return unless lc $where eq lc $self->{options}{botchan};
+        return unless $self->my_channel($where);
     }
     my ($nick, undef) = split /!/, $who;
     $self->emit_event('reload_user', $nick);
@@ -217,11 +238,6 @@ sub debug {
     return $text;
 }
 
-sub getopts {
-    my $self = shift;
-    return %{$self->{'options'}};
-}
-
 sub heartbeat {
     my ($self, $kernel) = @_[OBJECT, KERNEL];
     $kernel->delay(heartbeat => $self->{options}{self_clock} );
@@ -230,24 +246,59 @@ sub heartbeat {
 }
 
 sub onotice {
-    my ($self, $message, $target) = @_;
-    $self->debug("Sending $message to $self->{options}{helper_prefix}$self->{options}{botchan}.");
-    $self->{IRC}->yield(notice => $self->{options}{helper_prefix} . $target => $message);
+    my ($self, $message, $prefix, $target) = @_;
+    $self->{IRC}->yield(notice => $prefix . $target => $message);
     return 1;
 }
 
 sub where_ok {
     my ($self, $where) = @_;
-    if (lc $where eq lc $self->{options}{botchan}) {
-        return 1;
-    }
-    if (lc $where eq lc $self->{options}{adminchan}) {
+    if ($self->my_channel($where)) {
         return 1;
     }
     if (lc $where eq lc $self->{IRC}{INFO}{RealNick}) {
         return 1;
     }
     return 0;
+}
+
+sub my_channels {
+    my $self = shift;
+    my @channels;
+    my @chans = @{$self->{options}{irc}{channels}};
+    for my $cn (0..$#chans) {
+        my %channel = %{$chans[$cn]};
+        push @channels, $channel{name};
+    }
+    return @channels;
+}
+
+sub teaser_channels {
+    my $self = shift;
+    my @channels;
+    my @chans = @{$self->{options}{irc}{channels}};
+    for my $cn (0..$#chans) {
+        my %channel = %{$chans[$cn]};
+        if ($channel{teasers}) {
+            push @channels, $channel{name};
+        }
+    }
+    return @channels;
+}
+
+sub is_owner {
+    my ($self, $nick) = @_;
+    return $nick eq $self->{options}{irc}{owner};
+}
+
+sub is_chanop {
+    my ($self, $nick, $poco) = @_;
+    for my $channel ($self->my_channels()) {
+        if ($poco->is_channel_operator($channel, $nick)) {
+            return 1;
+        }
+    }
+    return $self->is_owner($nick);
 }
 
 sub parse {
@@ -259,8 +310,8 @@ sub parse {
     my @arg = split / /, $what;
     my $command = lc shift @arg;
     my $poco = $sender->get_heap();
-    my $botadmin = ($poco->is_channel_operator($self->{options}{botchan}, $nick) || $poco->is_channel_operator($self->{options}{botchan}, $nick) || $nick eq $self->{options}{owner});
-    my $owner = ($nick eq $self->{options}{owner});
+    my $chanop = $self->is_chanop($nick, $poco);
+    my $owner = $self->is_owner($nick);
     return if $nick =~ /^(Cuff\d+|Guest\d+|Perv\d+|mib_.+)/;
     if ($what =~ /^!([^ ]+) ?(.*)/) {
         my $keyword = $1;
@@ -271,7 +322,7 @@ sub parse {
         else {
             @arg = undef;
         }
-        $self->emit_event("user_command_$keyword", $nick, $where, $command, $botadmin, $owner, @arg);
+        $self->emit_event("user_command_$keyword", $nick, $where, $command, $chanop, $owner, @arg);
     }
 }
 1;

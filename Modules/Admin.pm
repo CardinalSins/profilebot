@@ -14,6 +14,7 @@ sub new {
 
 sub register_handlers {
     my ($self, $BotCore) = @_;
+    $BotCore->register_handler('admin_notice', \&BotCore::Modules::Admin::admin_notice);
     $BotCore->register_handler('user_command_config', \&BotCore::Modules::Admin::config_option);
     $BotCore->register_handler('user_command_pending', \&BotCore::Modules::Admin::command_pending);
     $BotCore->register_handler('user_command_reload', \&BotCore::Modules::Admin::command_reload);
@@ -22,6 +23,15 @@ sub register_handlers {
     $BotCore->register_handler('user_command_lock', \&BotCore::Modules::Admin::command_approve);
     $BotCore->register_handler('user_command_delete', \&BotCore::Modules::Admin::command_delete);
     $BotCore->register_handler('user_command_unlock', \&BotCore::Modules::Admin::command_approve);
+}
+
+sub admin_notice {
+    my ($self, $message) = @_;
+    my @chans = @{$self->{options}{irc}{channels}};
+    for my $cn (0..$#chans) {
+        my %channel = %{$chans[$cn]};
+        $self->onotice($message, $channel{prefix}, $channel{name});
+    }
 }
 
 sub command_delete {
@@ -37,11 +47,11 @@ sub command_delete {
             $message = "Oh dear, I'm afraid I simply can't find that profile.";
         }
         else {
-            my $fg = $self->{colors}{$self->{options}{variable_color}};
-            my $text = $self->{colors}{$self->{options}{text_color}};
-            $self->onotice("$fg$victim$text deleted by $fg$nick$text.", $where);
+            my $fg = $self->get_color('variables');
+            my $text = $self->get_color('text');
+            $self->emit_event('admin_notice', "$fg$victim$text deleted by $fg$nick$text.");
             $self->emit_event('delete_user', $victim);
-            $self->{IRC}->yield(mode => $self->{options}{botchan} => '-v' => $victim);
+            map { $self->{IRC}->yield(mode => $_ => '-v' => $victim) } $self->my_channels();
             delete $self->{users}{lc $victim};
         }
     }
@@ -87,15 +97,15 @@ sub command_approve {
                 $message = "Sorry, $victim is already $state.";
             }
             else {
-                my $fg = $self->{colors}{$self->{options}{variable_color}};
-                my $text = $self->{colors}{$self->{options}{text_color}};
-                $self->onotice("$fg$victim$text state set to $state by $fg$nick$text.", $where);
+                my $fg = $self->get_color('variables');
+                my $text = $self->get_color('text');
+                $self->emit_event('admin_notice', "$fg$victim$text state set to $state by $fg$nick$text.");
                 $self->emit_event('modify_state', $victim, $state);
                 if ($state eq 'approved') {
-                    $self->{IRC}->yield(mode => $self->{options}{botchan} => '+v' => $victim);
+                    map { $self->{IRC}->yield(mode => $_ => '+v' => $victim) } $self->my_channels();
                 }
                 else {
-                    $self->{IRC}->yield(mode => $self->{options}{botchan} => '-v' => $victim);
+                    map { $self->{IRC}->yield(mode => $_ => '-v' => $victim) } $self->my_channels();
                 }
             }
         }
@@ -124,7 +134,7 @@ sub command_pending {
     $self->emit_event('load_pending');
     my $message;
     if ($self->{pending_count} > 0) {
-        my $fg = $self->{colors}{$self->{options}{variable_color}};
+        my $fg = $self->get_color('variables');
         $message = "$self->{pending_count} users await approval. First $self->{options}{show_pending}: $fg" . join "$self->{colors}{normal}, $fg", @{$self->{pending}};
     }
     else {

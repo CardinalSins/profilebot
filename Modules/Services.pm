@@ -19,13 +19,13 @@ sub register_handlers {
 
 sub authenticate {
     my $self = shift;
-    my $authcommand = $self->{options}{services}{auth_string};
-    my %template_values = %{$self->{options}{services}{template_values}};
+    my $authcommand = $self->{options}{irc}{services}{auth_string};
+    my %template_values = %{$self->{options}{irc}{services}{template_values}};
     my @tpl_vars = keys %template_values;
     for my $key (@tpl_vars) {
-        $authcommand =~ s/<$key>/$self->{options}{services}{template_values}{$key}/;
+        $authcommand =~ s/<$key>/$self->{options}{irc}{services}{template_values}{$key}/;
     }
-    $self->{IRC}->yield(privmsg => $self->{options}{services}{auth_command} => $authcommand);
+    $self->{IRC}->yield(privmsg => $self->{options}{irc}{services}{auth_command} => $authcommand);
     return 1;
 }
 1;

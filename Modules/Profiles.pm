@@ -16,7 +16,6 @@ sub register_handlers {
     my ($self, $BotCore) = @_;
     $BotCore->register_handler('modify_state', \&BotCore::Modules::Profiles::set_state);
     $BotCore->register_handler('nick_change', \&BotCore::Modules::Profiles::check_new_nick);
-    $BotCore->register_handler('error_message', \&BotCore::Modules::Profiles::error_message);
     $BotCore->register_handler('profile_found', \&BotCore::Modules::Profiles::show_teaser);
     $BotCore->register_handler('user_created', \&BotCore::Modules::Profiles::start_interview);
     $BotCore->register_handler('user_command_view', \&BotCore::Modules::Profiles::view_command);
@@ -46,12 +45,12 @@ sub check_new_nick {
     if (defined $self->get_user($old)) {
         return if defined $self->get_user($new);
         return unless $self->{users}{lc $new}{state} eq 'approved';
-        $self->{IRC}->yield(mode => $self->{options}{botchan}, '-v', $new);
+        map { $self->{IRC}->yield(mode => $_ => '-v' => $new) } $self->my_channels();
     }
     else {
         return unless defined $self->get_user($new);
         return unless $self->{users}{lc $new}{state} eq 'approved';
-        $self->{IRC}->yield(mode => $self->{options}{botchan}, '+v', $new);
+        map { $self->{IRC}->yield(mode => $_ => '+v' => $new) } $self->my_channels();
     }
 }
 
@@ -61,31 +60,15 @@ sub show_teaser {
     my %user = $self->get_user($nick);
     return unless exists $user{state};
     return unless ($user{state} eq 'approved' || $user{state} eq 'pending');
-    my $fg = $self->{colors}{$self->{options}{variable_color}};
-    my $text = $self->{colors}{$self->{options}{text_color}};
+    my $fg = $self->get_color('variables');
+    my $text = $self->get_color('text');
     my $message = $text . "Teaser profile for $fg$nick$text: Age: $fg$user{age}$text ";
     $message .= "Gender Identity: $fg$user{gender}$text ";
     $message .= "Orientation: $fg$user{orientation}$text ";
     $message .= "Role: $fg$user{role}$text ";
     $message .= "To see the rest, use $self->{colors}{bold}$fg!view $nick$text.";
-    $self->{IRC}->yield(privmsg => $self->{options}{botchan} => $message);
-    $self->{IRC}->yield(mode => "$self->{options}{botchan} +v $nick");
-}
-
-sub error_message {
-    my $self = shift;
-    my $channel_view = shift;
-    my $message = shift;
-    my $nick = undef;
-    if (!$channel_view) {
-        $nick = shift;
-    }
-    if (!$channel_view) {
-        $self->{IRC}->yield(privmsg => $nick => $message);
-    }
-    else {
-        $self->{IRC}->yield(privmsg => $self->{options}{botchan} => $message);
-    }
+    map { $self->{IRC}->yield(privmsg => $_ => $message) } $self->teaser_channels();
+    map { $self->{IRC}->yield(mode => $_ => '+v' => $nick) } $self->my_channels();
 }
 
 sub restrict {
@@ -142,8 +125,8 @@ sub view_command {
             $self->respond($message, $where, $nick);
             return 1;
         }
-        my $fg = $self->{colors}{$self->{options}{variable_color}};
-        my $text = $self->{colors}{$self->{options}{text_color}};
+        my $fg = $self->get_color('variables');
+        my $text = $self->get_color('text');
         my $userstate = ((($chanop || $owner) && $state ne 'approved') ? "[$self->{colors}{red}" . uc $state . "$text] " : $text);
         my $message = $userstate . "Roleplay profile for $fg$user{name}$text: ";
         $message .= $text . "Age$text: $fg$user{age} ";
@@ -306,7 +289,7 @@ sub enter_description {
         $user{state} = 'pending';
         $response .= " We're all done here. Happy perving!";
         my $message = sprintf('%s has created a profile for your viewing pleasure!', $nick);
-        $self->{IRC}->yield(privmsg => $self->{options}{botchan} => $message);
+        map { $self->{IRC}->yield(privmsg => $_ => $message) } $self->teaser_channels();
         $self->save_user($nick, %user);
         $self->emit_event('profile_found', $nick);
     }

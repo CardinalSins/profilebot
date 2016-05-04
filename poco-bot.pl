@@ -64,11 +64,11 @@ sub bot_start {
     $irc->yield( register => "all" );
 
     $irc->yield( connect =>
-          { Nick => $opts{botnick},
-            Username => $opts{botuser},
-            Ircname  => $opts{botrlnm},
-            Server   => $opts{server},
-            Port     => $opts{port},
+          { Nick => $opts{irc}{nick},
+            Username => $opts{irc}{user},
+            Ircname  => $opts{irc}{real},
+            Server   => $opts{irc}{server},
+            Port     => $opts{irc}{port},
           }
     );
 }
@@ -79,8 +79,17 @@ sub on_connect {
     my %opts = $BotCore->getopts();
     $BotCore->{kernel} = $kernel;
     $BotCore->emit_event('connect');
-    $irc->yield( join => $opts{botchan} );
-    $irc->yield( join => $opts{adminchan} => $opts{adminchan_key} );
+    my @channels = @{$opts{irc}{channels}};
+    for my $cn (0..$#channels) {
+        $BotCore->debug(Dumper(\$channels[$cn]));
+        my %channel = %{$channels[$cn]};
+        if (defined $channel{key}) {
+            $irc->yield( join => $channel{name} => $channel{key} );
+        }
+        else {
+            $irc->yield( join => $channel{name} );
+        }
+    }
     print "Connected, going to background\n";
 }
 

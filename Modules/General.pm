@@ -33,14 +33,14 @@ sub command_jeeves {
     my $message = "Yes, rather. A dreadful situation. I have summoned the gendarmes.";
     my $helptext = join ' ', @arg;
     $self->respond($message, $where, $nick);
-    $self->onotice("$nick is seeking assistance: $helptext", $self->{options}{botchan});
-    $self->onotice("$nick is seeking assistance: $helptext", $self->{options}{adminchan});
+    $message = "$nick is seeking assistance: $helptext";
+    $self->emit_event('admin_notice', $message);
 }
 
 sub command_edit {
     my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
-    my $fg = $self->{colors}{$self->{options}{variable_color}};
-    my $text = $self->{colors}{$self->{options}{text_color}};
+    my $fg = $self->get_color('variables');
+    my $text = $self->get_color('text');
     my $message = "That command does not exist. Just update the value you want to update. Use $fg!profilecommands$text to find out how.";
     $self->respond($message, $where, $nick);
     return 1;
@@ -87,8 +87,8 @@ sub show_colors {
 
 sub show_profile_commands {
     my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
-    my $fg = $self->{colors}{$self->{options}{variable_color}};
-    my $text = $self->{colors}{$self->{options}{text_color}};
+    my $fg = $self->get_color('variables');
+    my $text = $self->get_color('text');
     $self->{IRC}->yield(notice => $nick => "====== Profile Commands supported by PoCoProfileBot v1.0.0 ======");
     $self->{IRC}->yield(notice => $nick => "$fg!restrict$text:        Toggle restricting your profile to users with profiles only.");
     $self->{IRC}->yield(notice => $nick => "$fg!setup$text:           Start the profile creation process.");
@@ -104,9 +104,10 @@ sub show_profile_commands {
 
 sub show_commands {
     my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
-    my $fg = $self->{colors}{$self->{options}{base_color}};
-    my $og = $self->{colors}{$self->{options}{op_color}};
-    my $text = $self->{colors}{$self->{options}{text_color}};
+    my $fg = $self->get_color('base');
+    my $og = $self->get_color('op');
+    my $vg = $self->get_color('variables');
+    my $text = $self->get_color('text');
     $self->{IRC}->yield(notice => $nick => "====== General Commands supported by PoCoProfileBot v1.0.0 ======");
     $self->{IRC}->yield(notice => $nick => "$fg!commands$text:          Show this help text.");
     $self->{IRC}->yield(notice => $nick => "$fg!info$text:              Show information about the bot.");
@@ -114,7 +115,7 @@ sub show_commands {
     $self->{IRC}->yield(notice => $nick => "$fg!colours$text:           Show which colour names the bot supports.");
     $self->{IRC}->yield(notice => $nick => "$fg!rules$text:             Show the channel rules.");
     $self->{IRC}->yield(notice => $nick => "$fg!jeeves$text:            Alert the channel ops that you need assistance.");
-    $self->{IRC}->yield(notice => $nick => "$fg!profilecommands$text:   Show the profile-related commands.");
+    $self->{IRC}->yield(notice => $nick => "$vg!profilecommands$text:   Show the profile-related commands.");
     if ($botadmin || $owner) {
         $self->{IRC}->yield(notice => $nick => "$og!opcommands$text:        Show only the op commands.");
     }
@@ -123,9 +124,9 @@ sub show_commands {
 sub show_op_commands {
     my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
     return unless $botadmin || $owner;
-    my $fg = $self->{colors}{$self->{options}{base_color}};
-    my $og = $self->{colors}{$self->{options}{op_color}};
-    my $text = $self->{colors}{$self->{options}{text_color}};
+    my $fg = $self->get_color('base');
+    my $og = $self->get_color('op');
+    my $text = $self->get_color('text');
     $self->{IRC}->yield(notice => $nick => "====== Admin Commands supported by PoCoProfileBot v1.0.0 ======");
     $self->{IRC}->yield(notice => $nick => "$og!lock$text:            Lock a user's profile.");
     $self->{IRC}->yield(notice => $nick => "$og!delete$text:          Delete a user's profile. $self->{colors}{bold}This is immediate and irreversible$text.");
