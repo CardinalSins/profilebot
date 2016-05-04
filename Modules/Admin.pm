@@ -30,7 +30,7 @@ sub admin_notice {
     my @chans = @{$self->{options}{irc}{channels}};
     for my $cn (0..$#chans) {
         my %channel = %{$chans[$cn]};
-        $self->onotice($message, $channel{prefix}, $channel{name});
+        $self->onotice($message, $channel{helpers}, $channel{name});
     }
 }
 
