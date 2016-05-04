@@ -135,10 +135,14 @@ sub command_pending {
     my $message;
     if ($self->{pending_count} > 0) {
         my $fg = $self->get_color('variables');
-        $message = "$self->{pending_count} users await approval. First $self->{options}{show_pending}: $fg" . join "$self->{colors}{normal}, $fg", @{$self->{pending}};
+        $message = "$self->{pending_count} users await approval. ";
+        if ($self->{pending} > 15)  {
+            $message .= "First $self->{options}{show_pending}: $fg";
+        }
+        $message .= join $self->get_color('normal') . ", $fg", @{$self->{pending}};
     }
     else {
-        $message = "Checking ... no pending users found, good job.";
+        $message = "The log book is bare, there remain no applicants awaiting approval. Well done.";
     }
     $self->respond($message, $where, $nick);
 }
