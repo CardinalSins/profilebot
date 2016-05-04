@@ -301,6 +301,15 @@ sub is_chanop {
     return $self->is_owner($nick);
 }
 
+sub get_message {
+    my ($self, $key) = @_;
+    $self->debug(Dumper(\$self->{languages}));
+    if (defined $self->{languages}{$self->{options}{language}}{$key}) {
+        return $self->{languages}{$self->{options}{language}}{$key};
+    }
+    return 'MESSAGE_' . uc $key;
+}
+
 sub parse {
     my ($self, $sender, $who, $what, @target) = @_[OBJECT, SENDER, ARG0, ARG2, ARG1];
     my $where = $target[0][0];

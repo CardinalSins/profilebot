@@ -23,6 +23,7 @@ sub register_handlers {
     $BotCore->register_handler('user_command_lock', \&BotCore::Modules::Admin::command_approve);
     $BotCore->register_handler('user_command_delete', \&BotCore::Modules::Admin::command_delete);
     $BotCore->register_handler('user_command_unlock', \&BotCore::Modules::Admin::command_approve);
+    $BotCore->register_handler('user_command_message', \&BotCore::Modules::Admin::command_message);
 }
 
 sub admin_notice {
@@ -34,17 +35,29 @@ sub admin_notice {
     }
 }
 
+sub command_message {
+    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    return unless $owner;
+    my $message_key = shift @arg;
+    my $message_text = join ' ', @arg;
+    my %options = %{$self->{options}};
+    my %language = %{$options{languages}{$self->{options}{language}}};
+    $language{$message_key} = $message_text;
+    %{$options{languages}{$self->{options}{language}}} = %language;
+    $self->saveconfig(%options);
+}
+
 sub command_delete {
     my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
     my $victim = shift @arg;
     my $message = undef;
     if (!$botadmin) {
-        $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
+        $message = $self->get_message('permission_denied');
     }
     else {
         $self->emit_event('reload_user', $victim);
         if (!defined $self->get_user($victim)) {
-            $message = "Oh dear, I'm afraid I simply can't find that profile.";
+            $message = $self->get_message('404');
         }
         else {
             my $fg = $self->get_color('variables');
@@ -66,12 +79,12 @@ sub command_approve {
     my $victim = shift @arg;
     my $message = undef;
     if (!$botadmin) {
-        $message = "I regret that I am unfortunately quite unable to allow that. Good day.";
+        $message = $self->get_message('permission_denied');
     }
     else {
         $self->emit_event('reload_user', $victim);
         if (!defined $self->get_user($victim)) {
-            $message = "Oh dear, I'm afraid I simply can't find that profile.";
+            $message = $self->get_message('404');
         }
         else {
             my %user = $self->get_user($victim);
@@ -135,14 +148,14 @@ sub command_pending {
     my $message;
     if ($self->{pending_count} > 0) {
         my $fg = $self->get_color('variables');
-        $message = "$self->{pending_count} users await approval. ";
+        $message = "There are $self->{pending_count} hopefuls seeking your approval. ";
         if ($self->{pending} > 15)  {
             $message .= "First $self->{options}{show_pending}: $fg";
         }
         $message .= join $self->get_color('normal') . ", $fg", @{$self->{pending}};
     }
     else {
-        $message = "The log book is bare, there remain no applicants awaiting approval. Well done.";
+        $message = $self->get_message('no_pending');
     }
     $self->respond($message, $where, $nick);
 }
@@ -151,7 +164,7 @@ sub command_reload {
     my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
     return unless $self->where_ok($where);
     return unless $owner;
-    my $message = "Yes, effendi, it shall be done.";
+    my $message = $self->get_message('sir_sammich');
     $self->respond($message, $where, $nick);
     kill URG => $$;
 }
