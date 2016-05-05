@@ -92,7 +92,7 @@ run_fork {
             $kernel->sig_handled();
             use warnings;
         }
-        my %version = ( version => '1.0.0',
+        my %version = ( version => '1.1.0',
                         name => 'PoCoProfileBot',
                         author => 'CardinalSins',
                         homepage => 'https://github.com/CardinalSins/profilebot',
