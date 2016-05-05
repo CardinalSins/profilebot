@@ -22,6 +22,7 @@ sub register_handlers {
     $BotCore->register_handler('user_command_pending', \&BotCore::Modules::Admin::command_pending);
     $BotCore->register_handler('user_command_reload', \&BotCore::Modules::Admin::command_reload);
     $BotCore->register_handler('user_command_ok', \&BotCore::Modules::Admin::command_approve);
+    $BotCore->register_handler('user_command_okay', \&BotCore::Modules::Admin::command_approve);
     $BotCore->register_handler('user_command_hide', \&BotCore::Modules::Admin::command_approve);
     $BotCore->register_handler('user_command_lock', \&BotCore::Modules::Admin::command_approve);
     $BotCore->register_handler('user_command_delete', \&BotCore::Modules::Admin::command_delete);

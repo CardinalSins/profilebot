@@ -132,6 +132,7 @@ sub show_op_commands {
     $self->{IRC}->yield(notice => $nick => "$og!lock$text:            Lock a user's profile.");
     $self->{IRC}->yield(notice => $nick => "$og!delete$text:          Delete a user's profile. $self->{colors}{bold}This is immediate and irreversible$text.");
     $self->{IRC}->yield(notice => $nick => "$og!ok$text:              Approve a user's profile. Approved profiles can be viewed, pending will only show teasers.");
+    $self->{IRC}->yield(notice => $nick => "$og!okay$text:            Approve a user's profile. Approved profiles can be viewed, pending will only show teasers.");
     $self->{IRC}->yield(notice => $nick => "$og!hide$text:            Set a user's profile to pending.");
 }
 1;
