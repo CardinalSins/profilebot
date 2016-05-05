@@ -27,6 +27,18 @@ sub register_handlers {
     $BotCore->register_handler('user_command_delete', \&BotCore::Modules::Admin::command_delete);
     $BotCore->register_handler('user_command_unlock', \&BotCore::Modules::Admin::command_approve);
     $BotCore->register_handler('user_command_message', \&BotCore::Modules::Admin::command_message);
+    $BotCore->register_handler('user_command_nl', \&BotCore::Modules::Admin::add_language);
+}
+
+sub add_language {
+    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    return unless $owner or $botadmin;
+    my $language = shift @_;
+    return if defined $self->{options}{languages}{$language};
+    %options = %{$self->{options}};
+    my %blank;
+    $options{languages}{$language} = %blank;
+    $self->saveconfig(%options);
 }
 
 sub command_perish {
