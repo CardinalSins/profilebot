@@ -21,6 +21,44 @@ sub register_handlers {
     $BotCore->register_handler('reload_user', \&BotCore::Modules::Database::loaduser);
     $BotCore->register_handler('delete_user', \&BotCore::Modules::Database::delete_user);
     $BotCore->register_handler('load_pending', \&BotCore::Modules::Database::reload_pending);
+    $BotCore->register_handler('load_stats', \&BotCore::Modules::Database::load_stats);
+    $BotCore->register_handler('startup', \&BotCore::Modules::Database::reload_pending);
+    $BotCore->register_handler('startup', \&BotCore::Modules::Database::load_stats);
+}
+
+sub load_stats {
+    my $self = shift;
+    my $dbh = $self->{DBH};
+    my $query = "SELECT COUNT(*) as count FROM user WHERE state = 'pending'";
+    my $statement = $dbh->prepare($query) or do{ $self->debug($!); return 0; };
+    $statement->execute() or do{ $self->debug($!); return 0; };
+    my $row = $statement->fetchrow_hashref();
+    my %users = %{$row};
+    my $pending = $users{count};
+    $self->{pending_users} = $pending;
+    $query = "SELECT COUNT(*) as count FROM user WHERE state = 'approved'";
+    $statement = $dbh->prepare($query) or do{ $self->debug($!); return 0; };
+    $statement->execute() or do{ $self->debug($!); return 0; };
+    $row = $statement->fetchrow_hashref();
+    %users = %{$row};
+    my $usercount = $users{count};
+    $self->{approved_users} = $usercount;
+    $query = "SELECT COUNT(*) as count FROM user";
+    $statement = $dbh->prepare($query) or do{ $self->debug($!); return 0; };
+    $statement->execute() or do{ $self->debug($!); return 0; };
+    $row = $statement->fetchrow_hashref();
+    %users = %{$row};
+    $usercount = $users{count};
+    $self->{all_users} = $usercount;
+    $query = "SELECT COUNT(*) as count FROM user WHERE state = 'locked'";
+    $statement = $dbh->prepare($query) or do{ $self->debug($!); return 0; };
+    $statement->execute() or do{ $self->debug($!); return 0; };
+    $row = $statement->fetchrow_hashref();
+    %users = %{$row};
+    $usercount = $users{count};
+    $self->{locked_users} = $usercount;
+    my $now = time;
+    $self->{uptime} = scalar $now - scalar $self->{birth};
 }
 
 sub reload_pending {
@@ -30,8 +68,8 @@ sub reload_pending {
     my $query = "SELECT COUNT(*) as count FROM user WHERE state = 'pending'";
     my $statement = $dbh->prepare($query) or do{ $self->debug($!); return 0; };
     $statement->execute() or do{ $self->debug($!); return 0; };
-    my $pc = $statement->fetchrow_hashref();
-    my %pendcnt = %{$pc};
+    my $row = $statement->fetchrow_hashref();
+    my %pendcnt = %{$row};
     my $pending = $pendcnt{count};
     $self->{pending_count} = $pending;
     $statement->execute() or do{ $self->debug($!); return 0; };

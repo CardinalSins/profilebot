@@ -16,6 +16,7 @@ sub new {
     my $class = shift;
     my $self = {};
     bless($self, $class);
+    $self->{birth} = time;
     $self->readconfig();
     $self->{IRC} = shift;
     $self->{DBH} = DBI->connect("dbi:mysql:dbname=$self->{options}{database}{name}", $self->{options}{database}{user}, $self->{options}{database}{pass});
@@ -26,18 +27,9 @@ sub new {
                    orange => ORANGE, yellow => YELLOW, light_green => LIGHT_GREEN, teal => TEAL, light_cyan => LIGHT_CYAN,
                    light_blue => LIGHT_BLUE, pink => PINK, grey => GREY, gray => GREY, light_grey => LIGHT_GREY, light_gray => LIGHT_GREY );
     %{$self->{colors}} = %colors;
-    $self->emit_event('load_pending');
+    $self->emit_event('startup');
     %{$self->{UNITS}} = (second => 1, minute => 60, hour => 3600, day => 86400, week => 604800, month => 2592000, year => 31536000);
-    $self->register_handler('die', \&terminate);
     return $self;
-}
-
-sub terminate {
-    my $self = shift;
-    $self->debug("Dying.");
-    sleep 1;
-    $self->debug("Dead!");
-    kill TERM => $$;
 }
 
 sub versions {

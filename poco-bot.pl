@@ -95,7 +95,8 @@ run_fork {
         my %version = ( version => '1.0.0',
                         name => 'PoCoProfileBot',
                         author => 'CardinalSins',
-                        homepage => 'https://github.com/CardinalSins/profilebot' );
+                        homepage => 'https://github.com/CardinalSins/profilebot',
+                        blog => 'http://rphaven-cuff-link.tumblr.com/' );
         $BotCore->versions(%version);
 
         $irc->{modrefresh} = Module::Refresh->new();

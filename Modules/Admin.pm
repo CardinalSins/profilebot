@@ -47,8 +47,7 @@ sub command_perish {
     return unless $owner or $botadmin;
     $self->{IRC}->yield(ctcp => $where => "ACTION salutes $nick.");
     my $message = "When you're wounded and left on Afghanistan's plains, And the women come out to cut up what remains, Jest roll to your rifle and blow out your brains. An' go to your Gawd like a soldier.";
-    $self->{IRC}->yield(quit => $message);
-    $self->emit_event('die');
+    $self->{IRC}->yield(shutdown => $message);
 }
 
 sub admin_notice {

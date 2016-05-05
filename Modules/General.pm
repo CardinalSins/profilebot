@@ -21,6 +21,21 @@ sub register_handlers {
     $BotCore->register_handler('user_command_commands', \&BotCore::Modules::General::show_commands);
     $BotCore->register_handler('user_command_colours', \&BotCore::Modules::General::show_colors);
     $BotCore->register_handler('user_command_colors', \&BotCore::Modules::General::show_colors);
+    $BotCore->register_handler('user_command_stats', \&BotCore::Modules::General::show_stats);
+}
+
+sub show_stats {
+    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    $self->emit_event('load_stats');
+    my $fg = $self->get_color('variables');
+    my $nr = $self->{colors}{normal};
+    my $message = "I have been awake for $fg$self->{uptime}$nr seconds. ";
+    $message .= "I currently know of $fg$self->{all_users}$nr users. $fg$self->{approved_users}$nr fully ";
+    $message .= "approved, and $fg$self->{locked_users}$nr in solitary confinement. ";
+    if ($self->{pending_users}) {
+        $message .= "Of the remainder, $fg$self->{pending_users}$nr are patiently waiting for approval."
+    }
+    $self->respond($message, $where, $nick);
 }
 
 sub command_rules {
@@ -49,7 +64,7 @@ sub command_edit {
 
 sub command_info {
     my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
-    my $message = "I am $self->{version}{name} v$self->{version}{version}, written by $self->{version}{author}. My genome can be found at $self->{version}{homepage}";
+    my $message = "I am $self->{version}{name} v$self->{version}{version}, written by $self->{version}{author}. My genome can be found at $self->{version}{homepage} and my blog at $self->{version}{blog}";
     $self->respond($message, $where, $nick);
     return 1;
 }
