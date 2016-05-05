@@ -4,7 +4,6 @@ use warnings;
 use diagnostics;
 use DBI;
 use Data::Dumper;
-use Switch;
 use POE;
 use JSON;
 use IRC::Utils qw(NORMAL BOLD UNDERLINE REVERSE ITALIC FIXED WHITE BLACK BLUE GREEN RED BROWN PURPLE ORANGE YELLOW LIGHT_GREEN TEAL LIGHT_CYAN LIGHT_BLUE PINK GREY LIGHT_GREY);
@@ -332,8 +331,8 @@ sub get_message {
     my $language = $self->{options}{language};
     my %languages = %{$self->{options}{languages}};
     my $message;
-    if (defined $languages{$language}{$key}) {
-        $message = $languages{$language}{$key};
+    if (defined $languages{$language}{lc $key}) {
+        $message = $languages{$language}{lc $key};
     }
     else {
         $message = undef;
@@ -341,7 +340,7 @@ sub get_message {
     if (@_) {
         my %tpl_vals = @_;
         for my $key (keys %tpl_vals) {
-            $message =~ s/{$key}/$tpl_vals{$key}/;
+            $message =~ s/{lc $key}/$tpl_vals{lc $key}/;
         }
     }
     return defined $message ? $message : 'MESSAGE_' . uc $key;

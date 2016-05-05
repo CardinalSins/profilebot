@@ -67,7 +67,7 @@ sub show_teaser {
     $message .= "Gender Identity: $fg$user{gender}$text ";
     $message .= "Orientation: $fg$user{orientation}$text ";
     $message .= "Role: $fg$user{role}$text ";
-    $message .= "To see the rest, use $self->{colors}{bold}$fg!view $nick$text.";
+    $message .= "For more, $self->{colors}{bold}$fg!view $nick$text.";
     map { $self->{IRC}->yield(privmsg => $_ => $message) } $self->teaser_channels();
     map { $self->{IRC}->yield(mode => $_ => '+v' => $nick) } $self->my_channels();
 }

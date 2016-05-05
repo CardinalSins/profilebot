@@ -3,8 +3,10 @@
 ## REQUIRES:
 # POE::Component::IRC   libpoe-component-irc-perl
 # Switch                libswitch-perl
-# YAML                  libyaml-perl
+# JSON                  libyaml-perl
 # Module::Refresh       libmodule-refresh-perl
+# Proc::Fork            libproc-fork-perl
+# DBI                   libdbd-mysql-perl
 
 use warnings;
 use strict;
@@ -13,8 +15,6 @@ use Data::Dumper;
 $Data::Dumper::Indent = 1;
 
 use POE qw(Component::IRC::State);
-# use POE;
-# use POE::Component::IRC;
 use BotCore;
 use Module::Refresh;
 use Proc::Fork;

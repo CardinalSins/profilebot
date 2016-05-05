@@ -67,7 +67,7 @@ sub command_message {
     my $message_text = join ' ', @arg;
     my %options = %{$self->{options}};
     my %language = %{$options{languages}{$self->{options}{language}}};
-    $language{$message_key} = $message_text;
+    $language{lc $message_key} = $message_text;
     %{$options{languages}{$self->{options}{language}}} = %language;
     $self->saveconfig(%options);
 }
