@@ -112,8 +112,8 @@ sub show_commands {
     $self->{IRC}->yield(notice => $nick => "====== General Commands supported by PoCoProfileBot v1.0.0 ======");
     $self->{IRC}->yield(notice => $nick => "$fg!commands$text:          Show this help text.");
     $self->{IRC}->yield(notice => $nick => "$fg!info$text:              Show information about the bot.");
-    $self->{IRC}->yield(notice => $nick => "$fg!colors$text:            Show which color names the bot supports.");
-    $self->{IRC}->yield(notice => $nick => "$fg!colours$text:           Show which colour names the bot supports.");
+    $self->{IRC}->yield(notice => $nick => "$fg!colors$text:            Show which color names the bot supports for normal people.");
+    $self->{IRC}->yield(notice => $nick => "$fg!colours$text:           Show which colour names the bot supports for English people.");
     $self->{IRC}->yield(notice => $nick => "$fg!rules$text:             Show the channel rules.");
     $self->{IRC}->yield(notice => $nick => "$fg!jeeves$text:            Alert the channel ops that you need assistance.");
     $self->{IRC}->yield(notice => $nick => "$vg!profilecommands$text:   Show the profile-related commands.");
