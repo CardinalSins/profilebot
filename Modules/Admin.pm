@@ -33,11 +33,11 @@ sub register_handlers {
 sub add_language {
     my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
     return unless $owner or $botadmin;
-    my $language = shift @_;
+    my $language = shift @arg;
     return if defined $self->{options}{languages}{$language};
-    %options = %{$self->{options}};
-    my %blank;
-    $options{languages}{$language} = %blank;
+    my %options = %{$self->{options}};
+    my %blank = (enabled => 1);
+    %{$options{languages}{$language}} = %blank;
     $self->saveconfig(%options);
 }
 
