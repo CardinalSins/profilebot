@@ -86,6 +86,11 @@ sub respond {
 
 sub register_handler {
     my ($self, $event, $handler) = @_;
+    my ($package, $filename, $line) = caller;
+    if (defined $package) {
+        my $information = "$package registered handler for $event";
+        $self->debug($information);
+    }
     push @{$self->{events}{$event}}, \&$handler;
 }
 

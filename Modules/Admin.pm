@@ -29,6 +29,12 @@ sub register_handlers {
     $BotCore->register_handler('user_command_unlock', \&BotCore::Modules::Admin::command_approve);
     $BotCore->register_handler('user_command_message', \&BotCore::Modules::Admin::command_message);
     $BotCore->register_handler('user_command_nl', \&BotCore::Modules::Admin::add_language);
+    $BotCore->register_handler('perish', \&BotCore::Modules::Admin::perish);
+}
+
+sub perish {
+    my $self = shift;
+    $self->{IRC}->yield('shutdown');
 }
 
 sub add_language {
@@ -46,7 +52,7 @@ sub command_perish {
     my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
     return unless $owner or $botadmin;
     $self->{IRC}->yield(ctcp => $where => "ACTION salutes $nick.");
-    $self->{IRC}->yield(shutdown => "Meh.");
+    $self->emit_event('perish');
 }
 
 sub admin_notice {
