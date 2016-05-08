@@ -184,7 +184,7 @@ sub enter_age {
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{age} = join ' ', @arg;
-    my $response = "Thank you. Your age has been set to $user{age}.";
+    my $response = "Thank you. Your age has been set to $user{age}. ";
     if ($user{state} eq 'new') {
         $response .= 'Now enter your gender identity using !gender. ';
         $response .= 'This can be as basic or elaborate as you like, e.g. ';
@@ -201,7 +201,7 @@ sub enter_gender {
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{gender} = join ' ', @arg;
-    my $response = "Thank you. Your gender identity has been set to $user{gender}.";
+    my $response = "Thank you. Your gender identity has been set to $user{gender}. ";
     if ($user{state} eq 'aged') {
         $response .= 'Now enter your orientation using !orientation. ';
         $response .= 'For example !orientation lesbian or !orientation I only play with left-handed redheaded men between 35 and 37 years old.';
@@ -217,7 +217,7 @@ sub enter_orientation {
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{orientation} = join ' ', @arg;
-    my $response = "Thank you. Your orientation has been set to $user{orientation}.";
+    my $response = "Thank you. Your orientation has been set to $user{orientation}. ";
     if ($user{state} eq 'gendered') {
         $response .= 'Now enter your limits using !limits. ';
         $response .= 'For example !limits pain or !limits People who misspell HUMOUR.';
@@ -233,7 +233,7 @@ sub enter_limits {
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{limits} = join ' ', @arg;
-    my $response = "Thank you. Your limits have been set to $user{limits}.";
+    my $response = "Thank you. Your limits have been set to $user{limits}. ";
     if ($user{state} eq 'oriented') {
         $response .= 'Now enter your kinks using !kinks. ';
         $response .= 'For example !kinks spanking or !kinks People who can spell HUMOUR, COLOUR, and HONOUR correctly.';
@@ -249,7 +249,7 @@ sub enter_kinks {
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{kinks} = join ' ', @arg;
-    my $response = "Thank you. Your kinks have been set to $user{kinks}.";
+    my $response = "Thank you. Your kinks have been set to $user{kinks}. ";
     if ($user{state} eq 'limited') {
         $response .= 'Now enter your preferred role using !role. ';
         $response .= 'This can be what role you prefer within BDSM; e.g. !role top, or !role masochist. ';
@@ -266,7 +266,7 @@ sub enter_role {
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{role} = join ' ', @arg;
-    my $response = "Thank you. Your role has been set to $user{role}.";
+    my $response = "Thank you. Your role has been set to $user{role}. ";
     if ($user{state} eq 'kinky') {
         $response .= ' Now enter a location using !location. ';
         $response .= 'You can use actual locations, like London or Seattle. You can use fictional locations, like Minas Tirith or Draenor. ';
@@ -283,7 +283,7 @@ sub enter_location {
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{location} = join ' ', @arg;
-    my $response = "Thank you. Your location has been set to $user{location}.";
+    my $response = "Thank you. Your location has been set to $user{location}. ";
     if ($user{state} eq 'roled') {
         $response .= ' Now describe yourself using !description. ';
         $response .= 'This is a free-form field and you can enter as much or as little as you like.';
@@ -298,18 +298,23 @@ sub enter_description {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
+    my $teaser = 0;
     $user{description} = join ' ', @arg;
-    my $response = "Thank you. Your description has been set to $user{description}.";
+    my $response = "Thank you. Your description has been set to $user{description}. ";
     if ($user{state} eq 'located') {
+        $teaser = 1;
         $user{state} = 'pending';
-        $response .= " We're all done here. Happy perving!";
+        $response .= "We're all done here. Happy perving!";
         my $message = sprintf('%s has created a profile for your viewing pleasure!', $nick);
         map { $self->{IRC}->yield(privmsg => $_ => $message) } $self->teaser_channels();
         $self->save_user($nick, %user);
-        $self->emit_event('profile_found', $nick);
+        $self->emit_event('reload_user', $nick);
     }
     $self->{IRC}->yield(privmsg => $nick => $response);
     $self->save_user($nick, %user);
     $self->emit_event('user_edited', $nick);
+    if ($teaser) {
+        map { $self->emit_event('profile_found', $nick, $_, $poco) } $self->teaser_channels();
+    }
 }
 1;
