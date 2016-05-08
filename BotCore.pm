@@ -32,6 +32,24 @@ sub new {
     return $self;
 }
 
+sub register_command_namespace {
+    my ($self, $prefix, $namespace) = @_;
+    my %prefixes;
+    if (defined $self->{command_handlers}) {
+        %prefixes = %{$self->{command_handlers}};
+    }
+    return if defined $prefixes{$namespace};
+    $prefixes{$namespace} = $prefix;
+    %{$self->{command_handlers}} = %prefixes;
+}
+
+sub get_ref {
+    my ($self, $option_path) = @_;
+    my %options = %{$self->{options}};
+    my $at = \%options; $at = ref $at ? $at->{$_} : undef for split /\./, $option_path;
+    return \$at;
+}
+
 sub versions {
     my ($self, %versions) = @_;
     %{$self->{version}} = %versions;
@@ -68,6 +86,7 @@ sub loadmodules {
         $self->{modules}{$modname} = $modpack->new();
         $self->{modules}{$modname}->register_handlers($self);
     }
+    map { $self->emit_event('module_load_' . lc $_) } keys %{$self->{modules}};
     $self->debug("Loading modules ... done!");
 }
 
@@ -356,16 +375,21 @@ sub parse {
     my $chanop = $self->is_chanop($nick, $poco);
     my $owner = $self->is_owner($nick);
     return if $nick =~ /^(Cuff\d+|Guest\d+|Perv\d+|mib_.+)/;
-    if ($what =~ /^!([^ ]+) ?(.*)/) {
-        my $keyword = $1;
+    if ($what =~ /^(.)([^ ]+) ?(.*)/) {
+        return unless grep (/$1/, values %{$self->{command_handlers}});
+        my %handlers = %{$self->{command_handlers}};
+        my @command_handlers = grep { $handlers{$_} eq $1 } keys %handlers;
+        my $keyword = $2;
         my @arg;
-        if (defined $2) {
-            @arg = split / /, $2;
+        if (defined $3) {
+            @arg = split / /, $3;
         }
         else {
             @arg = undef;
         }
-        $self->emit_event("user_command_$keyword", $nick, $where, $command, $chanop, $owner, @arg);
+        for my $prefix (each @command_handlers) {
+            $self->emit_event($prefix . "_command_$keyword", $nick, $where, $command, $chanop, $owner, @arg);
+        }
     }
 }
 1;

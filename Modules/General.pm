@@ -22,6 +22,13 @@ sub register_handlers {
     $BotCore->register_handler('user_command_colours', \&BotCore::Modules::General::show_colors);
     $BotCore->register_handler('user_command_colors', \&BotCore::Modules::General::show_colors);
     $BotCore->register_handler('user_command_stats', \&BotCore::Modules::General::show_stats);
+    $BotCore->register_handler('module_load_general', \&BotCore::Modules::General::namespace);
+}
+
+sub namespace {
+    my $self = shift;
+    $self->debug("Registering namespace user for key !");
+    $self->register_command_namespace('!', 'user');
 }
 
 sub show_stats {

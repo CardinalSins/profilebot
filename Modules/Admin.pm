@@ -167,10 +167,13 @@ sub config_option {
     return unless $self->where_ok($where);
     return unless $owner;
     my $config_option = shift @arg;
+    my $config_ref = \$self->get_ref($config_option);
+    # $self->debug(Dumper())
     my $config_value = join ' ', @arg;
-    my %new_opts = %{$self->{options}};
-    $new_opts{$config_option} = $config_value;
-    $self->saveconfig(%new_opts);
+    $config_ref = $config_value;
+    $self->debug(Dumper($self->{options}));
+    # $new_opts{$config_option} = $config_value;
+    # $self->saveconfig(%new_opts);
     return 1;
 }
 
