@@ -42,16 +42,18 @@ sub set_state {
 }
 
 sub check_new_nick {
-    my ($self, $old, $new) = @_;
-    if (defined $self->get_user($old)) {
-        return if defined $self->get_user($new);
-        return unless $self->{users}{lc $new}{state} eq 'approved';
-        map { $self->{IRC}->yield(mode => $_ => '-v' => $new) } $self->my_channels();
+    my ($self, $old_nick, $new_nick) = @_;
+    my %new = $self->get_user($new_nick);
+    my %old = $self->get_user($old_nick);
+    # If they're changing from one voiced nick to another, we don't need to care.
+    return if defined %new && defined %old && $old{state} eq 'approved' && $new{state} eq 'approved';
+    if (%old) {
+        return unless $new{state} eq 'approved';
+        map { $self->{IRC}->yield(mode => $_ => '-v' => $new_nick) } $self->my_channels();
     }
     else {
-        return unless defined $self->get_user($new);
-        return unless $self->{users}{lc $new}{state} eq 'approved';
-        map { $self->{IRC}->yield(mode => $_ => '+v' => $new) } $self->my_channels();
+        return unless $new{state} ne 'approved';
+        map { $self->{IRC}->yield(mode => $_ => '+v' => $new_nick) } $self->my_channels();
     }
 }
 
