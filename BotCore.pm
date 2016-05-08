@@ -238,7 +238,7 @@ sub userjoin {
         my %user = $self->get_user($nick);
         $user{seen} = time();
         $self->save_user($nick, %user);
-        $self->emit_event('profile_found', $nick);
+        $self->emit_event('profile_found', $nick, $where);
     }
     $self->emit_event('join_channel', $nick);
     return 1;

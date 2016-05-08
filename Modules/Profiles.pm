@@ -56,7 +56,9 @@ sub check_new_nick {
 }
 
 sub show_teaser {
-    my ($self, $nick) = @_;
+    my ($self, $nick, $where) = @_;
+    @teaser_channels = $self->teaser_channels();
+    return unless grep /$where/, @teaser_channels;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     return unless exists $user{state};
