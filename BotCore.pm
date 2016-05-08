@@ -32,6 +32,24 @@ sub new {
     return $self;
 }
 
+sub transfer_game_ownership {
+    my ($self, $where, $nick, $newhost) = @_;
+    my %game = %{$self->{active_game}};
+    my %players = %{$game{players}};
+    my %player = %{$players{$nick}};
+    my %newhost = %{$players{$newhost}};
+    my $fg = $self->get_color('game');
+    my $nt = $self->get_color('normal');
+    $player{host} = 0;
+    $newhost{host} = 1;
+    %{$players{$nick}} = %player;
+    %{$players{$newhost}} = %newhost;
+    %{$game{players}} = %players;
+    %{$self->{active_game}} = %game;
+    my $message = "Very well, $fg" . "$newhost$nt is now hosting the game.";
+    $self->respond($message, $where, $nick);
+}
+
 sub channel_voice {
     my ($self, $poco, $nick, $channel, $give) = @_;
     my $usermodes = $poco->nick_channel_modes($channel, $nick) or undef;
@@ -104,6 +122,7 @@ sub loadmodules {
 sub respond {
     my ($self, $message, $where, $nick) = @_;
     my $recipient;
+    $message = $self->get_color('normal') . $message;
     $self->{heap}->{seen_traffic} = 1;
     if ($where eq $self->{IRC}{INFO}{RealNick}) {
         $self->{IRC}->yield(notice => $nick => $message);
