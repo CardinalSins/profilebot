@@ -409,8 +409,9 @@ sub parse {
     return if $nick =~ /^(Cuff\d+|Guest\d+|Perv\d+|mib_.+)/;
     if ($what =~ /^(.)([^ ]+) ?(.*)/) {
         return unless defined $1 && grep (/$1/, values %{$self->{command_handlers}});
+        my $key = $1;
         my %handlers = %{$self->{command_handlers}};
-        my @command_handlers = grep { $handlers{$_} eq $1 } keys %handlers;
+        my @command_handlers = grep { $handlers{$_} eq $key } keys %handlers;
         my $keyword = $2;
         my @arg;
         if (defined $3) {
@@ -419,9 +420,7 @@ sub parse {
         else {
             @arg = undef;
         }
-        for my $prefix (each @command_handlers) {
-            $self->emit_event($prefix . "_command_$keyword", $nick, $where, $command, $chanop, $owner, $poco, @arg);
-        }
+        map { $self->emit_event($_ . "_command_$keyword", $nick, $where, $command, $chanop, $owner, $poco, @arg) } @command_handlers;
     }
 }
 1;
