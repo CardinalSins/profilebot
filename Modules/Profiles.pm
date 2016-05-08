@@ -42,23 +42,33 @@ sub set_state {
 }
 
 sub check_new_nick {
-    my ($self, $old_nick, $new_nick) = @_;
-    my %new = $self->get_user($new_nick);
-    my %old = $self->get_user($old_nick);
-    # If they're changing from one voiced nick to another, we don't need to care.
-    return if defined %new && defined %old && $old{state} eq 'approved' && $new{state} eq 'approved';
-    if (%old) {
-        return unless $new{state} eq 'approved';
-        map { $self->{IRC}->yield(mode => $_ => '-v' => $new_nick) } $self->my_channels();
+    my ($self, $old_nick, $new_nick, $poco) = @_;
+    my %old;
+    my %new;
+    if (defined $self->get_user($new_nick)) {
+        %new = $self->get_user($new_nick);
+    }
+    if (defined $self->get_user($old_nick)) {
+        %old = $self->get_user($old_nick);
+    }
+    if (!%old && !%new) {
+        return 1;
+    }
+    if (%new) {
+        if ($new{state} eq 'approved') {
+            map { $self->channel_voice($poco, $new_nick, $_, 1) } $self->my_channels();
+        }
+        else {
+            map { $self->channel_voice($poco, $new_nick, $_, 0) } $self->my_channels();
+        }
     }
     else {
-        return unless $new{state} ne 'approved';
-        map { $self->{IRC}->yield(mode => $_ => '+v' => $new_nick) } $self->my_channels();
+        map { $self->channel_voice($poco, $new_nick, $_, 0) } $self->my_channels();
     }
 }
 
 sub show_teaser {
-    my ($self, $nick, $where) = @_;
+    my ($self, $nick, $where, $poco) = @_;
     my @teaser_channels = $self->teaser_channels();
     return unless grep /$where/, @teaser_channels;
     return unless defined $self->get_user($nick);
@@ -73,11 +83,11 @@ sub show_teaser {
     $message .= "Role: $fg$user{role}$text ";
     $message .= "For more, $self->{colors}{bold}$fg!view $nick$text.";
     map { $self->{IRC}->yield(privmsg => $_ => $message) } $self->teaser_channels();
-    map { $self->{IRC}->yield(mode => $_ => '+v' => $nick) } $self->my_channels();
+    map { $self->channel_voice($poco, $nick, $_, 1) } $self->my_channels();
 }
 
 sub restrict {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     my $message;
@@ -95,7 +105,7 @@ sub restrict {
 }
 
 sub view_command {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     my $profile = shift @arg;
     $self->emit_event('reload_user', $profile);
     if (!defined $self->get_user($profile)) {
@@ -148,7 +158,7 @@ sub view_command {
 }
 
 sub command_setup {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return if defined $self->get_user($nick);
     my %user;
     $user{name} = $nick;
@@ -163,14 +173,14 @@ sub command_setup {
 }
 
 sub start_interview {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     $self->{IRC}->yield(privmsg => $nick => "Welcome to the PoCoProfileBot 1.0.0 interrogation process.");
     $self->{IRC}->yield(privmsg => $nick => "Note that all responses will be limited to 500 characters.");
     $self->{IRC}->yield(privmsg => $nick => "Please begin by entering your age using the command !age, e.g. !age 20 or !age Older Than The Universe.");
 }
 
 sub enter_age {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{age} = join ' ', @arg;
@@ -187,7 +197,7 @@ sub enter_age {
 }
 
 sub enter_gender {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{gender} = join ' ', @arg;
@@ -203,7 +213,7 @@ sub enter_gender {
 }
 
 sub enter_orientation {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{orientation} = join ' ', @arg;
@@ -219,7 +229,7 @@ sub enter_orientation {
 }
 
 sub enter_limits {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{limits} = join ' ', @arg;
@@ -235,7 +245,7 @@ sub enter_limits {
 }
 
 sub enter_kinks {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{kinks} = join ' ', @arg;
@@ -252,7 +262,7 @@ sub enter_kinks {
 }
 
 sub enter_role {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{role} = join ' ', @arg;
@@ -269,7 +279,7 @@ sub enter_role {
 }
 
 sub enter_location {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{location} = join ' ', @arg;
@@ -285,7 +295,7 @@ sub enter_location {
 }
 
 sub enter_description {
-    my ($self, $nick, $where, $command, $chanop, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->get_user($nick);
     my %user = $self->get_user($nick);
     $user{description} = join ' ', @arg;

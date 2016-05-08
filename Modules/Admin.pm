@@ -38,8 +38,8 @@ sub perish {
 }
 
 sub add_language {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
-    return unless $owner or $botadmin;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
+    return unless $owner or $chanop;
     my $language = shift @arg;
     return if defined $self->{options}{languages}{$language};
     my %options = %{$self->{options}};
@@ -49,8 +49,8 @@ sub add_language {
 }
 
 sub command_perish {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
-    return unless $owner or $botadmin;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
+    return unless $owner or $chanop;
     $self->{IRC}->yield(ctcp => $where => "ACTION salutes $nick.");
     $self->emit_event('perish');
 }
@@ -66,7 +66,7 @@ sub admin_notice {
 }
 
 sub command_message {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless $owner;
     my $message_key = shift @arg;
     my $message_text = join ' ', @arg;
@@ -78,10 +78,10 @@ sub command_message {
 }
 
 sub command_delete {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     my $victim = shift @arg;
     my $message = undef;
-    if (!$botadmin) {
+    if (!$chanop) {
         $message = $self->get_message('permission_denied');
     }
     else {
@@ -98,7 +98,7 @@ sub command_delete {
             $self->debug($message);
             $self->emit_event('admin_notice', $message);
             $self->emit_event('delete_user', $victim);
-            map { $self->{IRC}->yield(mode => $_ => '-v' => $victim) } $self->my_channels();
+            map { $self->channel_voice($poco, $victim, $_, 0) } $self->my_channels();
             delete $self->{users}{lc $victim};
         }
     }
@@ -108,11 +108,11 @@ sub command_delete {
 }
 
 sub command_approve {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless $self->where_ok($where);
     my $victim = shift @arg;
     my $message = undef;
-    if (!$botadmin) {
+    if (!$chanop) {
         $message = $self->get_message('permission_denied');
     }
     else {
@@ -149,10 +149,10 @@ sub command_approve {
                 $self->emit_event('admin_notice', "$fg$victim$text state set to $state by $fg$nick$text.");
                 $self->emit_event('modify_state', $victim, $state);
                 if ($state eq 'approved') {
-                    map { $self->{IRC}->yield(mode => $_ => '+v' => $victim) } $self->my_channels();
+                    map { $self->channel_voice($poco, $victim, $_, 1) } $self->my_channels();
                 }
                 else {
-                    map { $self->{IRC}->yield(mode => $_ => '-v' => $victim) } $self->my_channels();
+                    map { $self->channel_voice($poco, $victim, $_, 0) } $self->my_channels();
                 }
             }
         }
@@ -163,7 +163,7 @@ sub command_approve {
 }
 
 sub config_option {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless $self->where_ok($where);
     return unless $owner;
     my $config_option = shift @arg;
@@ -178,7 +178,7 @@ sub config_option {
 }
 
 sub config_delete {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless $self->where_ok($where);
     return unless $owner;
     my $config_option = shift @arg;
@@ -190,9 +190,9 @@ sub config_delete {
 }
 
 sub command_pending {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless $self->where_ok($where);
-    return unless $owner || $botadmin;
+    return unless $owner || $chanop;
     $self->emit_event('load_pending');
     my $message;
     if ($self->{pending_count} > 0) {
@@ -210,7 +210,7 @@ sub command_pending {
 }
 
 sub command_reload {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless $self->where_ok($where);
     return unless $owner;
     my $message = $self->get_message('sir_sammich');

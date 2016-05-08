@@ -32,6 +32,17 @@ sub new {
     return $self;
 }
 
+sub channel_voice {
+    my ($self, $poco, $nick, $channel, $give) = @_;
+    my $usermodes = $poco->nick_channel_modes($channel, $nick) or undef;
+    if (defined $usermodes && index($usermodes, 'v') ==  -1 && $give) {
+        $self->{IRC}->yield(mode => $channel => '+v' => $nick);
+    }
+    elsif (defined $usermodes && index($usermodes, 'v') !=  -1 && !$give) {
+        $self->{IRC}->yield(mode => $channel => '-v' => $nick);
+    }
+}
+
 sub register_command_namespace {
     my ($self, $prefix, $namespace) = @_;
     my %prefixes;
@@ -227,7 +238,8 @@ sub userpart {
 }
 
 sub userjoin {
-    my ($self, $who, $where) = @_[OBJECT, ARG0, ARG1];
+    my ($self, $who, $where, $sender) = @_[OBJECT, ARG0, ARG1, SENDER];
+    my $poco = $sender->get_heap();
     $self->{heap}->{seen_traffic} = 1;
     if ($where =~ /^#/) {
         return unless $self->my_channel($where);
@@ -238,7 +250,7 @@ sub userjoin {
         my %user = $self->get_user($nick);
         $user{seen} = time();
         $self->save_user($nick, %user);
-        $self->emit_event('profile_found', $nick, $where);
+        $self->emit_event('profile_found', $nick, $where, $poco);
     }
     $self->emit_event('join_channel', $nick);
     return 1;
@@ -252,11 +264,12 @@ sub userkicked {
 }
 
 sub nickchange {
-    my ($self, $who, $newnick) = @_[OBJECT, ARG0, ARG1];
+    my ($self, $who, $newnick, $sender) = @_[OBJECT, ARG0, ARG1, SENDER];
     my ($oldnick, undef) = split /!/, $who;
+    my $poco = $sender->get_heap();
     $self->{heap}->{seen_traffic} = 1;
     $self->emit_event('new_nick', $newnick);
-    $self->emit_event('nick_change', $oldnick, $newnick);
+    $self->emit_event('nick_change', $oldnick, $newnick, $poco);
     delete $self->{users}{lc $oldnick};
 }
 
@@ -376,7 +389,7 @@ sub parse {
     my $owner = $self->is_owner($nick);
     return if $nick =~ /^(Cuff\d+|Guest\d+|Perv\d+|mib_.+)/;
     if ($what =~ /^(.)([^ ]+) ?(.*)/) {
-        return unless grep (/$1/, values %{$self->{command_handlers}});
+        return unless defined $1 && grep (/$1/, values %{$self->{command_handlers}});
         my %handlers = %{$self->{command_handlers}};
         my @command_handlers = grep { $handlers{$_} eq $1 } keys %handlers;
         my $keyword = $2;
@@ -388,7 +401,7 @@ sub parse {
             @arg = undef;
         }
         for my $prefix (each @command_handlers) {
-            $self->emit_event($prefix . "_command_$keyword", $nick, $where, $command, $chanop, $owner, @arg);
+            $self->emit_event($prefix . "_command_$keyword", $nick, $where, $command, $chanop, $owner, $poco, @arg);
         }
     }
 }

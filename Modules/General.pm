@@ -32,7 +32,7 @@ sub namespace {
 }
 
 sub show_stats {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     $self->emit_event('load_stats');
     my $fg = $self->get_color('variables');
     my $nr = $self->{colors}{normal};
@@ -46,13 +46,13 @@ sub show_stats {
 }
 
 sub command_rules {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     my $message = "The rules for $self->{options}{botchan} can be found at $self->{options}{rules_url}";
     $self->respond($message, $where, $nick);
 }
 
 sub command_jeeves {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     my $message = "Yes, rather. A dreadful situation. I have summoned the gendarmes.";
     my $helptext = join ' ', @arg;
     $self->respond($message, $where, $nick);
@@ -61,7 +61,7 @@ sub command_jeeves {
 }
 
 sub command_edit {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     my $fg = $self->get_color('variables');
     my $text = $self->get_color('text');
     my $message = "That command does not exist. Just update the value you want to update. Use $fg!profilecommands$text to find out how.";
@@ -70,14 +70,14 @@ sub command_edit {
 }
 
 sub command_info {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     my $message = "I am $self->{version}{name} v$self->{version}{version}, written by $self->{version}{author}. My genome can be found at $self->{version}{homepage} and my blog at $self->{version}{blog}";
     $self->respond($message, $where, $nick);
     return 1;
 }
 
 sub show_colors {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     my $normal = $self->{colors}{normal} . 'normal' . $self->{colors}{normal};
     my $bold = $self->{colors}{bold} . 'bold' . $self->{colors}{normal};
     my $underline = $self->{colors}{underline} . 'underline' . $self->{colors}{normal};
@@ -109,7 +109,7 @@ sub show_colors {
 }
 
 sub show_profile_commands {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     my $fg = $self->get_color('variables');
     my $text = $self->get_color('text');
     $self->{IRC}->yield(notice => $nick => "====== Profile Commands supported by PoCoProfileBot v1.0.0 ======");
@@ -126,7 +126,7 @@ sub show_profile_commands {
 }
 
 sub show_commands {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     my $fg = $self->get_color('base');
     my $og = $self->get_color('op');
     my $vg = $self->get_color('variables');
@@ -139,14 +139,14 @@ sub show_commands {
     $self->{IRC}->yield(notice => $nick => "$fg!rules$text:             Show the channel rules.");
     $self->{IRC}->yield(notice => $nick => "$fg!jeeves$text:            Alert the channel ops that you need assistance.");
     $self->{IRC}->yield(notice => $nick => "$vg!profilecommands$text:   Show the profile-related commands.");
-    if ($botadmin || $owner) {
+    if ($chanop || $owner) {
         $self->{IRC}->yield(notice => $nick => "$og!opcommands$text:        Show only the op commands.");
     }
 }
 
 sub show_op_commands {
-    my ($self, $nick, $where, $command, $botadmin, $owner, @arg) = @_;
-    return unless $botadmin || $owner;
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
+    return unless $chanop || $owner;
     my $fg = $self->get_color('base');
     my $og = $self->get_color('op');
     my $text = $self->get_color('text');
