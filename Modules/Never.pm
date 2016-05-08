@@ -67,6 +67,11 @@ sub start_game {
         $self->respond($message, $where, $nick);
         return 1;
     }
+    if (!$chanop && !$owner) {
+        my $message = $self->get_message('permission_denied');
+        $self->respond($message, $where, $nick);
+        return 1;
+    }
     my @questions = @{$self->{options}{games}{never}{questions}};
     my $question_count = min(int(shift @arg), scalar @questions);
     $self->debug("QC: $question_count");
