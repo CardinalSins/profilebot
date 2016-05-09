@@ -50,7 +50,11 @@ sub add_language {
 
 sub command_perish {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
-    return unless $owner or $chanop;
+    if (!$owner) {
+        $message = "I bloody well shall not.";
+        $self->respond($message, $where, $nick);
+        return 1;
+    }
     $self->{IRC}->yield(ctcp => $where => "ACTION salutes $nick.");
     $self->emit_event('perish');
 }
