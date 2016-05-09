@@ -51,7 +51,7 @@ sub add_language {
 sub command_perish {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     if (!$owner) {
-        $message = "I bloody well shall not.";
+        my $message = "I bloody well shall not.";
         $self->respond($message, $where, $nick);
         return 1;
     }
