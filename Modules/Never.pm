@@ -15,20 +15,21 @@ sub new {
 
 sub register_handlers {
     my ($self, $BotCore) = @_;
-    $BotCore->register_handler('never_command_never', \&BotCore::Modules::Never::start_game);
-    $BotCore->register_handler('never_command_join', \&BotCore::Modules::Never::join_game);
-    $BotCore->register_handler('never_command_resign', \&BotCore::Modules::Never::resign_game);
-    $BotCore->register_handler('never_command_transfer', \&BotCore::Modules::Never::transfer_game);
-    # $BotCore->register_handler('never_command_start', \&BotCore::Modules::Never::start_game);
-    # $BotCore->register_handler('never_command_never', \&BotCore::Modules::Never::add_never);
-    # $BotCore->register_handler('never_command_ever', \&BotCore::Modules::Never::add_ever);
-    $BotCore->register_handler('never_command_cancel', \&BotCore::Modules::Never::cancel_game);
+    $BotCore->register_handler('game_command_never', \&BotCore::Modules::Never::start_game);
+    $BotCore->register_handler('game_command_join', \&BotCore::Modules::Never::join_game);
+    $BotCore->register_handler('game_command_resign', \&BotCore::Modules::Never::resign_game);
+    $BotCore->register_handler('game_command_transfer', \&BotCore::Modules::Never::transfer_game);
+    # $BotCore->register_handler('game_command_start', \&BotCore::Modules::Never::start_game);
+    # $BotCore->register_handler('game_command_never', \&BotCore::Modules::Never::add_never);
+    # $BotCore->register_handler('game_command_have', \&BotCore::Modules::Never::add_have);
+    # $BotCore->register_handler('game_command_pass', \&BotCore::Modules::Never::add_pass);
+    $BotCore->register_handler('game_command_cancel', \&BotCore::Modules::Never::cancel_game);
     $BotCore->register_handler('module_load_never', \&BotCore::Modules::Never::namespace);
 }
 
 sub namespace {
     my $self = shift;
-    $self->register_command_namespace('.', 'never');
+    $self->register_command_namespace('.', 'game');
 }
 
 sub cancel_game {

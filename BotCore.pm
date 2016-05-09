@@ -407,7 +407,8 @@ sub parse {
     my $chanop = $self->is_chanop($nick, $poco);
     my $owner = $self->is_owner($nick);
     return if $nick =~ /^(Cuff\d+|Guest\d+|Perv\d+|mib_.+)/;
-    if ($what =~ /^(.)([^ ]+) ?(.*)/) {
+    my $prefix_characters = $self->{options}{prefix_characters};
+    if ($what =~ /^([$prefix_characters])([^ ]+) ?(.*)/) {
         return unless defined $1 && grep (/$1/, values %{$self->{command_handlers}});
         my $key = $1;
         my %handlers = %{$self->{command_handlers}};
