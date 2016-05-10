@@ -5,3 +5,5 @@ debug.log
 .config.json
 .config.json.bak
 .bot.pid
+Jeeves.crt
+Jeeves.key

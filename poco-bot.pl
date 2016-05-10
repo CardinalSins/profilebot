@@ -15,14 +15,18 @@ use Data::Dumper;
 $Data::Dumper::Indent = 1;
 
 use POE qw(Component::IRC::State);
+use POE::Component::SSLify qw(SSLify_ContextCreate);
 use BotCore;
 use Module::Refresh;
 use Proc::Fork;
 
 
+
 run_fork {
     child {
-        our ($irc) = POE::Component::IRC::State->spawn(Flood => 1, UseSSL => 1);
+#        local $POE::Component::SSLify::IGNORE_SSL_ERRORS=1;
+        my $ctx = SSLify_ContextCreate("Jeeves.crt", "Jeeves.key");
+        our ($irc) = POE::Component::IRC::State->spawn(Flood => 1, UseSSL => 1, SSLCtx => $ctx);
         our $BotCore = new BotCore($irc);
         sub bot_start {
             # The bot session has started. Select a nickname. Connect to a server.
