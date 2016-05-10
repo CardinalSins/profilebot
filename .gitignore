@@ -7,3 +7,4 @@ debug.log
 .bot.pid
 Jeeves.crt
 Jeeves.key
+Jeeves.cer
