@@ -15,16 +15,127 @@ sub new {
 
 sub register_handlers {
     my ($self, $BotCore) = @_;
-    $BotCore->register_handler('game_command_never', \&BotCore::Modules::Never::start_game);
+    $BotCore->register_handler('game_command_nhie', \&BotCore::Modules::Never::create_game);
     $BotCore->register_handler('game_command_join', \&BotCore::Modules::Never::join_game);
     $BotCore->register_handler('game_command_resign', \&BotCore::Modules::Never::resign_game);
     $BotCore->register_handler('game_command_transfer', \&BotCore::Modules::Never::transfer_game);
-    # $BotCore->register_handler('game_command_start', \&BotCore::Modules::Never::start_game);
-    # $BotCore->register_handler('game_command_never', \&BotCore::Modules::Never::add_never);
-    # $BotCore->register_handler('game_command_have', \&BotCore::Modules::Never::add_have);
+    $BotCore->register_handler('game_command_start', \&BotCore::Modules::Never::start_game);
+    $BotCore->register_handler('game_command_never', \&BotCore::Modules::Never::add_vote);
+    $BotCore->register_handler('game_command_have', \&BotCore::Modules::Never::add_vote);
+    $BotCore->register_handler('game_finished', \&BotCore::Modules::Never::show_summary);
+    $BotCore->register_handler('ask_question', \&BotCore::Modules::Never::ask_question);
     # $BotCore->register_handler('game_command_pass', \&BotCore::Modules::Never::add_pass);
     $BotCore->register_handler('game_command_cancel', \&BotCore::Modules::Never::cancel_game);
     $BotCore->register_handler('module_load_never', \&BotCore::Modules::Never::namespace);
+}
+
+sub ask_question {
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
+    my %game = %{$self->{active_game}};
+    my $aq = scalar @{$game{questions}{pending}};
+    my $nq = scalar @{$game{questions}{asked}};
+    my $tq = $aq + $nq;
+    my $fg = $self->get_color('game');
+    my $nt = $self->get_color('normal');
+    my $question = shift @{$game{questions}{pending}};
+    push @{$game{questions}{asked}}, $question;
+    my $message = "$nq/$aq: I have never been so foolish that I have ... $fg$question$nt.";
+    if (!@{$game{questions}{pending}}) {
+        $message .= " $fg" . "Final question$nt.";
+    }
+    $self->debug("Saying $message to $where");
+    $self->respond($message, $where, $nick);
+    $game{state} = 'asked';
+    %{$self->{active_game}} = %game;
+}
+
+sub show_summary {
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
+    return unless defined $self->{active_game};
+    my %game = %{$self->{active_game}};
+    delete $self->{active_game};
+    my $message = "Game finished. Player responses, in order of highest ever/never ratio: ";
+    $self->respond($message, $where, $nick);
+    my %players = %{$game{players}};
+    my @playerlist;
+    my %playerhash;
+    for my $player (keys %players) {
+        %playerhash = %{$players{$player}};
+        $playerhash{name} = $player;
+        if ($playerhash{have} == 0 || $playerhash{never} == 0) {
+            if ($playerhash{have} == 0) {
+                $playerhash{ratio} = -1;
+            }
+            else {
+                $playerhash{ratio} = 1;
+            }
+        }
+        else {
+            $playerhash{ratio} = $playerhash{have} / $playerhash{never};
+        }
+        my $playerref = \%playerhash;
+        push @playerlist, $playerref;
+    }
+    my @rankings = sort { $a->{ratio} <=> $b->{ratio} } @playerlist;
+    for my $result (@rankings) {
+        my %player = %{$result};
+        $self->respond("$player{name}: $player{ratio} ($player{have}/$player{never})", $where, $nick)
+    }
+}
+
+sub add_vote {
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
+    return unless defined $self->{active_game};
+    my $fg = $self->get_color('game');
+    my $nt = $self->get_color('normal');
+    my %game = %{$self->{active_game}};
+    $self->debug(Dumper(\%game));
+    my %players = %{$game{players}};
+    my @playernames = @{$game{participants}};
+    my @responded;
+    my @pending_questions = @{$game{questions}{pending}};
+    if (defined $game{current_round}{responded}) {
+        @responded = @{$game{current_round}{responded}};
+    }
+    return if grep /$nick/, @{$game{current_round}{responded}};
+    push @{$game{current_round}{responded}}, $nick;
+    return unless defined $players{$nick};
+    if ($command eq '.never') {
+        $players{$nick}{never}++;
+    }
+    else {
+        $players{$nick}{have}++;
+    }
+    my $playercount = scalar @{$game{participants}};
+    my $respondedcount = scalar @{$game{current_round}{responded}};
+    if (!@{$game{questions}{pending}} && $playercount == $respondedcount) {
+        $self->emit_event('game_finished', $nick, $where, $command, $chanop, $owner, $poco, @arg);
+        return 1;
+    }
+    $self->debug(Dumper(\$playercount));
+    $self->debug(Dumper(\$respondedcount));
+    $self->debug(Dumper(\@{$game{questions}{pending}}));
+    %{$self->{active_game}} = %game;
+    my @pending_qs = @{$game{questions}{pending}};
+    my $pending_count = scalar @pending_qs;
+    $self->debug("$pending_count left, $playercount players, $respondedcount responded");
+    if ($playercount == $respondedcount && $pending_count > 0) {
+        $self->debug('Asking next question.');
+        $self->emit_event('ask_question', $nick, $where, $command, $chanop, $owner, $poco, @arg);
+    }
+    $self->debug($command);
+}
+
+sub start_game {
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
+    return unless defined $self->{active_game};
+    my $fg = $self->get_color('game');
+    my $nt = $self->get_color('normal');
+    my %game = %{$self->{active_game}};
+    $game{state} = 'running';
+    my $message = "$fg$nick$nt has started the game. Use $fg.have$nt to indicate that you have experiened the listed situation, $fg.never$nt to indicate that you have not.";
+    $self->respond($message, $where, $nick);
+    $self->emit_event('ask_question', $nick, $where, $command, $chanop, $owner, $poco, @arg);
 }
 
 sub namespace {
@@ -60,7 +171,7 @@ sub cancel_game {
     return 1;
 }
 
-sub start_game {
+sub create_game {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     $self->debug(Dumper(\@arg));
     if (defined $self->{active_game}) {
@@ -82,14 +193,25 @@ sub start_game {
     my @picks = @questions[@selected_qns];
     my $fg = $self->get_color('game');
     my $nt = $self->get_color('normal');
-    my $message = "$fg$nick$nt is hosting a game of $fg" . "Never Have I Ever$nt with $fg" . $question_count . "$nt questions. Type $fg.join$nt to join.";
-    my %player = (host => 1, never => 0, have => 0, pass => 0);
+    my $message = "$fg$nick$nt is hosting a game of $fg" . "Never Have I Ever$nt with $fg" . $question_count;
+    $message .= "$nt questions. Type $fg.join$nt to join. When enough players have joined, type $fg.start$nt to start the game.";
+    my %player = (host => 1, never => 0, have => 0);
     my %players;
     %{$players{$nick}} = %player;
     my %game;
+    my @responded;
+    my %round;
+    @{$round{responded}} = @responded;
+    @{$game{participants}} = keys %players;
+    %{$game{current_round}} = %round;
     %{$game{players}} = %players;
     $game{name} = 'never';
-    @{$game{questions}} = @picks;
+    $game{state} = 'preparing';
+    my %qs;
+    my @done;
+    @{$qs{pending}} = @picks;
+    @{$qs{asked}} = @done;
+    %{$game{questions}} = %qs;
     $self->respond($message, $where, $nick);
     %{$self->{active_game}} = %game;
 }
@@ -101,18 +223,22 @@ sub join_game {
         $self->respond($message, $where, $nick);
         return 1;
     }
+    if ($self->{active_game}{state} ne 'preparing') {
+        my $message = "I'm afraid you can only join the game before it has been started.";
+        $self->respond($message, $where, $nick);
+        return 1;
+    }
     my $fg = $self->get_color('game');
     my $nt = $self->get_color('normal');
     my %game = %{$self->{active_game}};
     my %player = (host => 0, never => 0, have => 0, pass => 0);
-    my %players = %{$game{players}};
-    if (defined($players{$nick})) {
+    if (defined $game{players}{$nick}) {
         my $message = "You're already playing this game, $fg$nick$nt. Use $fg.resign$nt to resign.";
         $self->respond($message, $where, $nick);
         return 1;
     }
-    %{$players{$nick}} = %player;
-    %{$game{players}} = %players;
+    %{$game{players}{$nick}} = %player;
+    @{$game{participants}} = keys %{$game{players}};
     %{$self->{active_game}} = %game;
     my $message = "Welcome player $fg$nick$nt to the game. Use $fg.start$nt to start the game or $fg" . ".cancel$nt to cancel.";
     $self->respond($message, $where, $nick);
