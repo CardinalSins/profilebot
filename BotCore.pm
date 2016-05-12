@@ -421,7 +421,7 @@ sub parse {
         else {
             @arg = undef;
         }
-        map { $self->emit_event($_ . "_command_$keyword", $nick, $where, $command, $chanop, $owner, $poco, @arg) } @command_handlers;
+        map { $self->emit_event(lc $_ . "_command_" . lc $keyword, $nick, $where, $command, $chanop, $owner, $poco, @arg) } @command_handlers;
     }
 }
 1;
