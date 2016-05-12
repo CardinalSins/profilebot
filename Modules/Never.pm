@@ -17,6 +17,7 @@ sub register_handlers {
     my ($self, $BotCore) = @_;
     # $BotCore->register_handler('nick_change', \&BotCore::Modules::Never::rename_player);
     $BotCore->register_handler('game_command_nhie', \&BotCore::Modules::Never::create_game);
+    $BotCore->register_handler('game_command_nqp', \&BotCore::Modules::Never::ask_question);
     $BotCore->register_handler('game_command_boot', \&BotCore::Modules::Never::remove_player);
     $BotCore->register_handler('game_command_join', \&BotCore::Modules::Never::join_game);
     $BotCore->register_handler('game_command_resign', \&BotCore::Modules::Never::resign_game);
@@ -59,6 +60,12 @@ sub list_players {
 
 sub ask_question {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
+    my %player = $self->{active_game}{players}{$nick};
+    if (!$player{host} && !$chanop && !$owner && $command eq '.nqp') {
+        my $message = $self->get_message('permission_denied');
+        $self->respond($message, $where, $nick);
+        return 1;
+    }
     my %game = %{$self->{active_game}};
     my $aq = scalar @{$game{questions}{pending}} + 1;
     my $nq = scalar @{$game{questions}{asked}} + 1;
@@ -270,7 +277,7 @@ sub join_game {
     %{$game{players}{$nick}} = %player;
     @{$game{participants}} = keys %{$game{players}};
     %{$self->{active_game}} = %game;
-    my $message = "Welcome player $fg$nick$nt to the game. Use $fg.start$nt to start the game or $fg" . ".cancel$nt to cancel.";
+    my $message = "Welcome player $fg$nick$nt to the game.";
     $self->respond($message, $where, $nick);
 }
 
