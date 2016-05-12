@@ -22,6 +22,7 @@ sub register_handlers {
     $BotCore->register_handler('game_command_start', \&BotCore::Modules::Never::start_game);
     $BotCore->register_handler('game_command_never', \&BotCore::Modules::Never::add_vote);
     $BotCore->register_handler('game_command_have', \&BotCore::Modules::Never::add_vote);
+    $BotCore->register_handler('game_command_ever', \&BotCore::Modules::Never::add_vote);
     $BotCore->register_handler('game_finished', \&BotCore::Modules::Never::show_summary);
     $BotCore->register_handler('ask_question', \&BotCore::Modules::Never::ask_question);
     $BotCore->register_handler('game_command_cancel', \&BotCore::Modules::Never::cancel_game);
@@ -31,8 +32,8 @@ sub register_handlers {
 sub ask_question {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     my %game = %{$self->{active_game}};
-    my $aq = scalar @{$game{questions}{pending}};
-    my $nq = scalar @{$game{questions}{asked}};
+    my $aq = scalar @{$game{questions}{pending}} + 1;
+    my $nq = scalar @{$game{questions}{asked}} + 1;
     my @empty;
     @{$game{current_round}{responded}} = @empty;
     my $tq = $aq + $nq;
@@ -40,7 +41,7 @@ sub ask_question {
     my $nt = $self->get_color('normal');
     my $question = shift @{$game{questions}{pending}};
     push @{$game{questions}{asked}}, $question;
-    my $message = sprintf("$fg%d$nt/$fg%d$nt: I have never been so foolish that I have ... $fg$question$nt.", $aq + 1, $tq + 1);
+    my $message = "I have never been so foolish that I have ... $fg$question$nt.";
     if (!@{$game{questions}{pending}}) {
         $message .= " $fg" . "Final question$nt.";
     }
@@ -52,14 +53,11 @@ sub show_summary {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->{active_game};
     my %game = %{$self->{active_game}};
-    delete $self->{active_game};
     my $message = "Game finished. Player responses, in order of highest ever/never ratio: ";
     $self->respond($message, $where, $nick);
-    my %players = %{$game{players}};
     my @playerlist;
-    my %playerhash;
-    for my $player (keys %players) {
-        %playerhash = %{$players{$player}};
+    for my $player (keys %{$game{players}}) {
+        my %playerhash = %{$game{players}{$player}};
         $playerhash{name} = $player;
         if ($playerhash{have} == 0 || $playerhash{never} == 0) {
             if ($playerhash{have} == 0) {
@@ -80,6 +78,7 @@ sub show_summary {
         my %player = %{$result};
         $self->respond("$player{name}: $player{ratio} ($player{have}/$player{never})", $where, $nick)
     }
+    delete $self->{active_game};
 }
 
 sub add_vote {
@@ -111,12 +110,12 @@ sub add_vote {
         $self->emit_event('game_finished', $nick, $where, $command, $chanop, $owner, $poco, @arg);
         return 1;
     }
-    %{$self->{active_game}} = %game;
     my @pending_qs = @{$game{questions}{pending}};
     my $pending_count = scalar @pending_qs;
     if ($playercount == $respondedcount && $pending_count > 0) {
         $self->emit_event('ask_question', $nick, $where, $command, $chanop, $owner, $poco, @arg);
     }
+    %{$self->{active_game}} = %game;
 }
 
 sub start_game {
@@ -142,8 +141,7 @@ sub cancel_game {
         $self->respond($message, $where, $nick);
         return 1;
     }
-    my %game = %{$self->{active_game}};
-    my %players = %{$game{players}};
+    my %players = %{$self->{active_game}{players}};
     my $fg = $self->get_color('game');
     my $nt = $self->get_color('normal');
     if (!defined $players{$nick}) {
@@ -151,7 +149,7 @@ sub cancel_game {
         $self->respond($message, $where, $nick);
         return 1;
     }
-    my %player = %{$players{$nick}};
+    my %player = $self->{active_game}{players}{$nick};
     if (!$player{host} && !$chanop && !$owner) {
         my $message = $self->get_message('permission_denied');
         $self->respond($message, $where, $nick);
