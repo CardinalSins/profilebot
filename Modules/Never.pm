@@ -16,6 +16,7 @@ sub new {
 sub register_handlers {
     my ($self, $BotCore) = @_;
     $BotCore->register_handler('game_command_nhie', \&BotCore::Modules::Never::create_game);
+    $BotCore->register_handler('game_command_boot', \&BotCore::Modules::Never::remove_player);
     $BotCore->register_handler('game_command_join', \&BotCore::Modules::Never::join_game);
     $BotCore->register_handler('game_command_resign', \&BotCore::Modules::Never::resign_game);
     $BotCore->register_handler('game_command_transfer', \&BotCore::Modules::Never::transfer_game);
@@ -28,6 +29,21 @@ sub register_handlers {
     $BotCore->register_handler('ask_question', \&BotCore::Modules::Never::ask_question);
     $BotCore->register_handler('game_command_cancel', \&BotCore::Modules::Never::cancel_game);
     $BotCore->register_handler('module_load_never', \&BotCore::Modules::Never::namespace);
+}
+
+sub remove_player {
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
+    return unless defined $self->{active_game};
+    my %player = $self->{active_game}{players}{$nick};
+    if (!$player{host} && !$chanop && !$owner) {
+        my $message = $self->get_message('permission_denied');
+        $self->respond($message, $where, $nick);
+        return 1;
+    }
+    my $victim = shift @arg;
+    delete $self->{active_game}{players}{$victim};
+    my $message = "$victim has been expunged.";
+    $self->respond($message, $where, $nick);
 }
 
 sub list_players {
@@ -64,6 +80,8 @@ sub show_summary {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->{active_game};
     my %game = %{$self->{active_game}};
+    my $fg = $self->get_color('game');
+    my $nt = $self->get_color('normal');
     my $message = "Game finished. Player responses, in descending order of $fg" . "have$nt/$fg" . "have not$nt ratio: ";
     $self->respond($message, $where, $nick);
     my @playerlist;
