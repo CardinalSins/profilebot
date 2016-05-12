@@ -15,6 +15,7 @@ sub new {
 
 sub register_handlers {
     my ($self, $BotCore) = @_;
+    # $BotCore->register_handler('nick_change', \&BotCore::Modules::Never::rename_player);
     $BotCore->register_handler('game_command_nhie', \&BotCore::Modules::Never::create_game);
     $BotCore->register_handler('game_command_boot', \&BotCore::Modules::Never::remove_player);
     $BotCore->register_handler('game_command_join', \&BotCore::Modules::Never::join_game);
@@ -152,6 +153,12 @@ sub start_game {
     return unless defined $self->{active_game};
     my $fg = $self->get_color('game');
     my $nt = $self->get_color('normal');
+    my %player = $self->{active_game}{players}{$nick};
+    if (!$player{host} && !$chanop && !$owner) {
+        my $message = $self->get_message('permission_denied');
+        $self->respond($message, $where, $nick);
+        return 1;
+    }
     $self->{active_game}{state} = 'running';
     my $message = "$fg$nick$nt has started the game. Use $fg.have$nt to indicate that you have experiened the listed situation, $fg.never$nt to indicate that you have not.";
     $self->respond($message, $where, $nick);
