@@ -73,7 +73,7 @@ sub show_summary {
         my $playerref = \%playerhash;
         push @playerlist, $playerref;
     }
-    my @rankings = sort { $a->{ratio} <=> $b->{ratio} } @playerlist;
+    my @rankings = sort { $b->{ratio} <=> $a->{ratio} } @playerlist;
     for my $result (@rankings) {
         my %player = %{$result};
         $self->respond("$player{name}: $player{ratio} ($player{have}/$player{never})", $where, $nick)
