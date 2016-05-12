@@ -126,7 +126,8 @@ sub add_vote {
     my $nt = $self->get_color('normal');
     my %game = %{$self->{active_game}};
     my %players = %{$game{players}};
-    my @playernames = @{$game{participants}};
+    my @playernames = keys %players;
+    @{$self->{active_game}{participants}} = keys %players;
     my @responded;
     my @pending_questions = @{$game{questions}{pending}};
     if (defined $game{current_round}{responded}) {
@@ -141,7 +142,7 @@ sub add_vote {
     else {
         $players{$nick}{have}++;
     }
-    my $playercount = scalar @{$game{participants}};
+    my $playercount = scalar @playernames;
     my $respondedcount = scalar @{$game{current_round}{responded}};
     if (!@{$game{questions}{pending}} && $playercount == $respondedcount) {
         $self->emit_event('game_finished', $nick, $where, $command, $chanop, $owner, $poco, @arg);
