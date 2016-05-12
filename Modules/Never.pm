@@ -177,6 +177,12 @@ sub cancel_game {
         $self->respond($message, $where, $nick);
         return 1;
     }
+    my %player = $self->{active_game}{players}{$nick};
+    if (!$player{host} && !$chanop && !$owner) {
+        my $message = $self->get_message('permission_denied');
+        $self->respond($message, $where, $nick);
+        return 1;
+    }
     my %players = %{$self->{active_game}{players}};
     my $fg = $self->get_color('game');
     my $nt = $self->get_color('normal');
