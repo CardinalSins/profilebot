@@ -8,3 +8,6 @@ debug.log
 Jeeves.crt
 Jeeves.key
 Jeeves.cer
+*.swp
+Jeeves.pem
+Jeeves.pub

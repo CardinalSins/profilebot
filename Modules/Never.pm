@@ -24,7 +24,6 @@ sub register_handlers {
     $BotCore->register_handler('game_command_have', \&BotCore::Modules::Never::add_vote);
     $BotCore->register_handler('game_finished', \&BotCore::Modules::Never::show_summary);
     $BotCore->register_handler('ask_question', \&BotCore::Modules::Never::ask_question);
-    # $BotCore->register_handler('game_command_pass', \&BotCore::Modules::Never::add_pass);
     $BotCore->register_handler('game_command_cancel', \&BotCore::Modules::Never::cancel_game);
     $BotCore->register_handler('module_load_never', \&BotCore::Modules::Never::namespace);
 }
@@ -34,18 +33,18 @@ sub ask_question {
     my %game = %{$self->{active_game}};
     my $aq = scalar @{$game{questions}{pending}};
     my $nq = scalar @{$game{questions}{asked}};
+    my @empty;
+    @{$game{current_round}{responded}} = @empty;
     my $tq = $aq + $nq;
     my $fg = $self->get_color('game');
     my $nt = $self->get_color('normal');
     my $question = shift @{$game{questions}{pending}};
     push @{$game{questions}{asked}}, $question;
-    my $message = "$nq/$aq: I have never been so foolish that I have ... $fg$question$nt.";
+    my $message = sprintf("%d/%d: I have never been so foolish that I have ... $fg$question$nt.", $aq + 1, $nq + 1);
     if (!@{$game{questions}{pending}}) {
         $message .= " $fg" . "Final question$nt.";
     }
-    $self->debug("Saying $message to $where");
     $self->respond($message, $where, $nick);
-    $game{state} = 'asked';
     %{$self->{active_game}} = %game;
 }
 
@@ -86,10 +85,10 @@ sub show_summary {
 sub add_vote {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->{active_game};
+    return unless $self->{active_game}{state} eq 'running';
     my $fg = $self->get_color('game');
     my $nt = $self->get_color('normal');
     my %game = %{$self->{active_game}};
-    $self->debug(Dumper(\%game));
     my %players = %{$game{players}};
     my @playernames = @{$game{participants}};
     my @responded;
@@ -112,18 +111,12 @@ sub add_vote {
         $self->emit_event('game_finished', $nick, $where, $command, $chanop, $owner, $poco, @arg);
         return 1;
     }
-    $self->debug(Dumper(\$playercount));
-    $self->debug(Dumper(\$respondedcount));
-    $self->debug(Dumper(\@{$game{questions}{pending}}));
     %{$self->{active_game}} = %game;
     my @pending_qs = @{$game{questions}{pending}};
     my $pending_count = scalar @pending_qs;
-    $self->debug("$pending_count left, $playercount players, $respondedcount responded");
     if ($playercount == $respondedcount && $pending_count > 0) {
-        $self->debug('Asking next question.');
         $self->emit_event('ask_question', $nick, $where, $command, $chanop, $owner, $poco, @arg);
     }
-    $self->debug($command);
 }
 
 sub start_game {
@@ -131,8 +124,7 @@ sub start_game {
     return unless defined $self->{active_game};
     my $fg = $self->get_color('game');
     my $nt = $self->get_color('normal');
-    my %game = %{$self->{active_game}};
-    $game{state} = 'running';
+    $self->{active_game}{state} = 'running';
     my $message = "$fg$nick$nt has started the game. Use $fg.have$nt to indicate that you have experiened the listed situation, $fg.never$nt to indicate that you have not.";
     $self->respond($message, $where, $nick);
     $self->emit_event('ask_question', $nick, $where, $command, $chanop, $owner, $poco, @arg);
@@ -173,7 +165,6 @@ sub cancel_game {
 
 sub create_game {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
-    $self->debug(Dumper(\@arg));
     if (defined $self->{active_game}) {
         my $message = "My apologies, it would be boorish to start a game when there is already one in progress.";
         $self->respond($message, $where, $nick);
@@ -186,7 +177,6 @@ sub create_game {
     }
     my @questions = @{$self->{options}{games}{never}{questions}};
     my $question_count = min(int(shift @arg), scalar @questions);
-    $self->debug("QC: $question_count");
     $question_count = max(1, $question_count);
     my @shuffled_questions = shuffle(0..$#questions);
     my @selected_qns = @shuffled_questions[0..$question_count - 1];

@@ -299,7 +299,7 @@ sub debug {
     my $die = shift;
     my $timestamp = strftime "%Y-%m-%d %R:%S", localtime;
     if ($self->{options}{debug} || $self->{options}{verbose}) {
-        open(my $debugger,">>$self->{options}{debugfile}") or do {
+        open(my $debugger,">>:encoding(utf-8)", $self->{options}{debugfile}) or do {
             print("Error: Cannot open debug file: $!");
             return;
         };
