@@ -40,7 +40,7 @@ sub ask_question {
     my $nt = $self->get_color('normal');
     my $question = shift @{$game{questions}{pending}};
     push @{$game{questions}{asked}}, $question;
-    my $message = sprintf("%d/%d: I have never been so foolish that I have ... $fg$question$nt.", $aq + 1, $nq + 1);
+    my $message = sprintf("$fg%d$nt/$fg%d$nt: I have never been so foolish that I have ... $fg$question$nt.", $aq + 1, $tq + 1);
     if (!@{$game{questions}{pending}}) {
         $message .= " $fg" . "Final question$nt.";
     }
