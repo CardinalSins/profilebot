@@ -23,10 +23,21 @@ sub register_handlers {
     $BotCore->register_handler('game_command_never', \&BotCore::Modules::Never::add_vote);
     $BotCore->register_handler('game_command_have', \&BotCore::Modules::Never::add_vote);
     $BotCore->register_handler('game_command_ever', \&BotCore::Modules::Never::add_vote);
+    $BotCore->register_handler('game_command_players', \&BotCore::Modules::Never::list_players);
     $BotCore->register_handler('game_finished', \&BotCore::Modules::Never::show_summary);
     $BotCore->register_handler('ask_question', \&BotCore::Modules::Never::ask_question);
     $BotCore->register_handler('game_command_cancel', \&BotCore::Modules::Never::cancel_game);
     $BotCore->register_handler('module_load_never', \&BotCore::Modules::Never::namespace);
+}
+
+sub list_players {
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
+    return unless defined $self->{active_game};
+    my $fg = $self->get_color('game');
+    my $nt = $self->get_color('normal');
+    my $players = join "$nt, $fg", keys $self->{active_game}{players};
+    my $message = "Current players: $fg$players$nt";
+    $self->respond($message, $where, $nick);
 }
 
 sub ask_question {
@@ -53,7 +64,7 @@ sub show_summary {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->{active_game};
     my %game = %{$self->{active_game}};
-    my $message = "Game finished. Player responses, in order of highest ever/never ratio: ";
+    my $message = "Game finished. Player responses, in descending order of $fg" . "have$nt/$fg" . "have not$nt ratio: ";
     $self->respond($message, $where, $nick);
     my @playerlist;
     for my $player (keys %{$game{players}}) {
