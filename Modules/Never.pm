@@ -5,6 +5,7 @@ package BotCore::Modules::Never;
 use Data::Dumper;
 use utf8;
 use List::Util qw(shuffle min max);
+use List::MoreUtils qw(uniq);
 
 sub new {
     my $class = shift;
@@ -42,14 +43,9 @@ sub add_question {
         $self->respond($message, $where, $nick);
         return 1;
     }
-    if (grep /^\Q$question\E$/, @{$self->{config}{games}{never}{questions}}) {
-        my $message = "I already have that question in my list.";
-        $self->respond($message, $where, $nick);
-        return 1;
-    }
     my @questions = @{$self->{options}{games}{never}{questions}};
     push @questions, $question;
-    @{$self->{options}{games}{never}{questions}} = sort @questions;
+    @{$self->{options}{games}{never}{questions}} = sort(uniq(@questions));
     $self->saveconfig(%{$self->{options}});
     my $message = "I have added that question.";
     $self->respond($message, $where, $nick);
