@@ -17,6 +17,7 @@ sub new {
 sub register_handlers {
     my ($self, $BotCore) = @_;
     # $BotCore->register_handler('nick_change', \&BotCore::Modules::Never::rename_player);
+    $BotCore->register_handler('game_command_questions', \&BotCore::Modules::Never::list_questions);
     $BotCore->register_handler('game_command_add', \&BotCore::Modules::Never::add_question);
     $BotCore->register_handler('game_command_nhie', \&BotCore::Modules::Never::create_game);
     $BotCore->register_handler('game_command_nqp', \&BotCore::Modules::Never::ask_question);
@@ -33,6 +34,23 @@ sub register_handlers {
     $BotCore->register_handler('ask_question', \&BotCore::Modules::Never::ask_question);
     $BotCore->register_handler('game_command_cancel', \&BotCore::Modules::Never::cancel_game);
     $BotCore->register_handler('module_load_never', \&BotCore::Modules::Never::namespace);
+}
+
+sub list_questions {
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
+    my @questions = @{$self->{options}{games}{never}{questions}};
+    open(my $fh,">:encoding(utf-8)", $self->{options}{questionfile}) or do {
+        $self->debug("Error: Cannot open questions file: $!");
+        return;
+    };
+    for my $question (@questions) {
+        $question = ucfirst $question;
+        $question =~ s/\.$//;
+        print $fh $question . ".\n";
+    }
+    close $fh;
+    my $message = "$nick: A list of my questions can be found at $self->{options}{questionurl}";
+    $self->respond($message, $where, $nick);
 }
 
 sub add_question {

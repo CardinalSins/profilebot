@@ -167,12 +167,12 @@ sub readconfig {
     }
     else {
         my $config;
-        open (FH, '<.config.json');
-        while (<FH>) {
+        open (my $configfile, '<:encoding(utf-8)', '.config.json');
+        while (<$configfile>) {
             $config .= $_;
         }
         %{$self->{options}} = %{JSON->new->utf8(1)->decode($config)};
-        close FH;
+        close $configfile;
     }
     $self->debug("Loading options ... done!");
 }
@@ -184,10 +184,9 @@ sub saveconfig {
         print("Error: Cannot find .config.json. Copy it to this directory, please.",1);
     }
     else {
-        open (FH, '>.config.json');
-        print FH JSON->new->utf8(1)->pretty(1)->encode($self->{options});
-        close FH;
-        # YAML::DumpFile(".config.json", %options);
+        open(my $configfile, ">:encoding(utf-8)", '.config.json') or die;
+        print $configfile JSON->new->utf8(1)->pretty(1)->encode($self->{options});
+        close $configfile;
         $self->readconfig();
     }
     $self->debug("Saving options ... done!");
