@@ -16,6 +16,7 @@ sub new {
 sub register_handlers {
     my ($self, $BotCore) = @_;
     # $BotCore->register_handler('nick_change', \&BotCore::Modules::Never::rename_player);
+    $BotCore->register_handler('game_command_add', \&BotCore::Modules::Never::add_question);
     $BotCore->register_handler('game_command_nhie', \&BotCore::Modules::Never::create_game);
     $BotCore->register_handler('game_command_nqp', \&BotCore::Modules::Never::ask_question);
     $BotCore->register_handler('game_command_boot', \&BotCore::Modules::Never::remove_player);
@@ -31,6 +32,28 @@ sub register_handlers {
     $BotCore->register_handler('ask_question', \&BotCore::Modules::Never::ask_question);
     $BotCore->register_handler('game_command_cancel', \&BotCore::Modules::Never::cancel_game);
     $BotCore->register_handler('module_load_never', \&BotCore::Modules::Never::namespace);
+}
+
+sub add_question {
+    my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
+    my $question = join ' ', @arg;
+    if (!$chanop && !$owner) {
+        my $message = $self->get_message('permission_denied');
+        $self->respond($message, $where, $nick);
+        return 1;
+    }
+    if (grep /^\Q$question\E$/, @{$self->{config}{games}{never}{questions}}) {
+        my $message = "I already have that question in my list.";
+        $self->respond($message, $where, $nick);
+        return 1;
+    }
+    my @questions = @{$self->{options}{games}{never}{questions}};
+    push @questions, $question;
+    @{$self->{options}{games}{never}{questions}} = sort @questions;
+    $self->saveconfig(%{$self->{options}});
+    my $message = "I have added that question.";
+    $self->respond($message, $where, $nick);
+    return 1;
 }
 
 sub remove_player {
@@ -53,7 +76,7 @@ sub list_players {
     return unless defined $self->{active_game};
     my $fg = $self->get_color('game');
     my $nt = $self->get_color('normal');
-    my $players = join "$nt, $fg", keys $self->{active_game}{players};
+    my $players = join "$nt, $fg", keys %{$self->{active_game}{players}};
     my $message = "Current players: $fg$players$nt";
     $self->respond($message, $where, $nick);
 }
@@ -196,12 +219,6 @@ sub cancel_game {
     my $nt = $self->get_color('normal');
     if (!defined $players{$nick}) {
         my $message = "You're not even playing this game, $fg$nick$nt. You must be at least game host to use that command.";
-        $self->respond($message, $where, $nick);
-        return 1;
-    }
-    my %player = $self->{active_game}{players}{$nick};
-    if (!$player{host} && !$chanop && !$owner) {
-        my $message = $self->get_message('permission_denied');
         $self->respond($message, $where, $nick);
         return 1;
     }
