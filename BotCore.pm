@@ -386,7 +386,7 @@ sub get_message {
         $message = undef;
     }
     if (@_) {
-        my %tpl_vals = @_;
+        my %tpl_vals = %{@_};
         for my $key (keys %tpl_vals) {
             $message =~ s/{lc $key}/$tpl_vals{lc $key}/;
         }

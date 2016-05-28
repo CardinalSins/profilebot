@@ -14,6 +14,7 @@ sub new {
 
 sub register_handlers {
     my ($self, $BotCore) = @_;
+    $BotCore->register_handler('user_command_jeeves', \&BotCore::Modules::General::command_jeeves);
     $BotCore->register_handler('user_command_info', \&BotCore::Modules::General::command_info);
     $BotCore->register_handler('user_command_rules', \&BotCore::Modules::General::command_rules);
     $BotCore->register_handler('user_command_edit', \&BotCore::Modules::General::command_edit);

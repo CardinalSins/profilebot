@@ -77,7 +77,7 @@ sub show_teaser {
     return unless ($user{state} eq 'approved' || $user{state} eq 'pending');
     my $fg = $self->get_color('variables');
     my $text = $self->get_color('text');
-    my $message = $text . "Teaser profile for $fg$nick$text: Age: $fg$user{age}$text ";
+    my $message = $text . "Profile preview for $fg$nick$text: Age: $fg$user{age}$text ";
     $message .= "Gender Identity: $fg$user{gender}$text ";
     $message .= "Orientation: $fg$user{orientation}$text ";
     $message .= "Role: $fg$user{role}$text ";
