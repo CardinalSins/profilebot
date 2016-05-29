@@ -242,6 +242,7 @@ sub save_user {
 
 sub userpart {
     my ($self, $who, $where) = @_[OBJECT, ARG0, ARG1];
+    $self->debug('userpart');
     $self->{heap}->{seen_traffic} = 1;
     if ($where =~ /^#/) {
         return unless $self->my_channel($where);
@@ -251,7 +252,7 @@ sub userpart {
     my %user = $self->get_user($nick);
     $user{seen} = time();
     $self->save_user($nick, %user);
-    $self->emit_event('part_channel', $nick);
+    $self->emit_event('part_channel', $nick, $where);
     delete $self->{users}{lc $nick};
     return 1;
 }
@@ -279,6 +280,7 @@ sub userkicked {
     my ($self, $where, $nick) = @_[OBJECT, ARG1, ARG2];
     $self->{heap}->{seen_traffic} = 1;
     delete $self->{users}{lc $nick};
+    $self->emit_event('part_channel', $nick, $where);
     return 1;
 }
 

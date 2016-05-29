@@ -16,7 +16,8 @@ sub new {
 
 sub register_handlers {
     my ($self, $BotCore) = @_;
-    # $BotCore->register_handler('nick_change', \&BotCore::Modules::Never::rename_player);
+    $BotCore->register_handler('nick_change', \&BotCore::Modules::Never::rename_player);
+    $BotCore->register_handler('part_channel', \&BotCore::Modules::Never::forget_player);
     $BotCore->register_handler('game_command_questions', \&BotCore::Modules::Never::list_questions);
     $BotCore->register_handler('game_command_add', \&BotCore::Modules::Never::add_question);
     $BotCore->register_handler('game_command_nhie', \&BotCore::Modules::Never::create_game);
@@ -34,6 +35,57 @@ sub register_handlers {
     $BotCore->register_handler('ask_question', \&BotCore::Modules::Never::ask_question);
     $BotCore->register_handler('game_command_cancel', \&BotCore::Modules::Never::cancel_game);
     $BotCore->register_handler('module_load_never', \&BotCore::Modules::Never::namespace);
+}
+
+sub forget_player {
+    my ($self, $nick, $where) = @_;
+    my ($command, $chanop, $owner, $poco, @arg) = ('undef', 'undef'. 'undef', 'undef', ['undef']);
+    return unless defined $self->{active_game};
+    return unless defined $self->{active_game}{players}{$nick};
+    delete $self->{active_game}{players}{$nick};
+    $self->debug(Dumper(\%{$self->{active_game}}));
+    my @playernames = keys %{$self->{active_game}{players}};
+    my @responded = @{$self->{active_game}{current_round}{responded}};
+    my @newresponded;
+    my $players = scalar @playernames;
+    for my $responder (@responded) {
+        if ($responder ne $nick) {
+            push @newresponded, $responder;
+        }
+    }
+    @{$self->{active_game}{current_round}{responded}} = @newresponded;
+    my $responders = scalar @newresponded;
+    $nick = $self->{active_game}{host};
+    if ($responders == $players) {
+        $self->debug(Dumper(\@{$self->{active_game}{questions}{pending}}));
+        if (@{$self->{active_game}{questions}{pending}}) {
+            $self->emit_event('ask_question', $nick, $where, $command, $chanop, $owner, $poco, @arg);
+        }
+        else {
+            $self->emit_event('game_finished', $nick, $where, $command, $chanop, $owner, $poco, @arg);
+        }
+    }
+}
+
+sub rename_player {
+    my ($self, $old_nick, $new_nick, $poco) = @_;
+    return unless defined $self->{active_game};
+    return unless defined $self->{active_game}{players}{$old_nick};
+    my %player = %{$self->{active_game}{players}{$old_nick}};
+    %{$self->{active_game}{players}{$new_nick}} = %player;
+    delete $self->{active_game}{players}{$old_nick};
+    my @responded = @{$self->{active_game}{current_round}{responded}};
+    my @newresponded;
+    for my $responder (@responded) {
+        if ($responder eq $old_nick) {
+            push @newresponded, $new_nick;
+        }
+        else {
+            push @newresponded, $responder;
+        }
+    }
+    @{$self->{active_game}{current_round}{responded}} = @newresponded;
+    $self->debug("Replaced $old_nick with $new_nick");
 }
 
 sub list_questions {
@@ -73,7 +125,7 @@ sub add_question {
 sub remove_player {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->{active_game};
-    my %player = $self->{active_game}{players}{$nick};
+    my %player = %{$self->{active_game}{players}{$nick}};
     if (!$player{host} && !$chanop && !$owner) {
         my $message = $self->get_message('permission_denied');
         $self->respond($message, $where, $nick);
@@ -285,6 +337,7 @@ sub create_game {
     @{$game{participants}} = keys %players;
     %{$game{current_round}} = %round;
     %{$game{players}} = %players;
+    $game{host} = $nick;
     $game{name} = 'never';
     $game{state} = 'preparing';
     my %qs;
