@@ -88,32 +88,43 @@ sub remove_player {
 sub list_players {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
     return unless defined $self->{active_game};
+    my @responded = @{$self->{active_game}{current_round}{responded}};
+    my $na = $self->{colors}{red};
     my $fg = $self->get_color('game');
     my $nt = $self->get_color('normal');
-    my $players = join "$nt, $fg", keys %{$self->{active_game}{players}};
-    my $message = "Current players: $fg$players$nt";
+    my @players;
+    for my $player (keys %{$self->{active_game}{players}}) {
+        if (grep /$player/, @responded) {
+            push @players, "$fg$player$nt";
+        }
+        else {
+            push @players, "$na$player$nt";
+        }
+    }
+    my $playerlist = join ", ", @players;
+    my $message = "Current players: $playerlist";
     $self->respond($message, $where, $nick);
 }
 
 sub ask_question {
     my ($self, $nick, $where, $command, $chanop, $owner, $poco, @arg) = @_;
-    my %player = $self->{active_game}{players}{$nick};
+    my %player = %{$self->{active_game}{players}{$nick}};
     if (!$player{host} && !$chanop && !$owner && $command eq '.nqp') {
         my $message = $self->get_message('permission_denied');
         $self->respond($message, $where, $nick);
         return 1;
     }
     my %game = %{$self->{active_game}};
-    my $aq = scalar @{$game{questions}{pending}} + 1;
-    my $nq = scalar @{$game{questions}{asked}} + 1;
     my @empty;
     @{$game{current_round}{responded}} = @empty;
-    my $tq = $aq + $nq;
     my $fg = $self->get_color('game');
     my $nt = $self->get_color('normal');
     my $question = shift @{$game{questions}{pending}};
     push @{$game{questions}{asked}}, $question;
-    my $message = "I have never been so foolish that I have ... $fg$question$nt.";
+    my $aq = scalar @{$game{questions}{pending}};
+    my $nq = scalar @{$game{questions}{asked}};
+    my $tq = $aq + $nq;
+    my $message = "$nq/$tq: I have never been so foolish that I have ... $fg$question$nt.";
     if (!@{$game{questions}{pending}}) {
         $message .= " $fg" . "Final question$nt.";
     }
@@ -127,7 +138,7 @@ sub show_summary {
     my %game = %{$self->{active_game}};
     my $fg = $self->get_color('game');
     my $nt = $self->get_color('normal');
-    my $message = "Game finished. Player responses, in descending order of $fg" . "have$nt/$fg" . "have not$nt ratio: ";
+    my $message = "Game finished. Player responses, in descending order of $fg" . "have$nt/$fg" . "never$nt ratio: ";
     $self->respond($message, $where, $nick);
     my @playerlist;
     for my $player (keys %{$game{players}}) {
@@ -135,10 +146,10 @@ sub show_summary {
         $playerhash{name} = $player;
         if ($playerhash{have} == 0 || $playerhash{never} == 0) {
             if ($playerhash{have} == 0) {
-                $playerhash{ratio} = -1;
+                $playerhash{ratio} = 'Inf';
             }
             else {
-                $playerhash{ratio} = 1;
+                $playerhash{ratio} = 'NaN';
             }
         }
         else {
@@ -198,7 +209,7 @@ sub start_game {
     return unless defined $self->{active_game};
     my $fg = $self->get_color('game');
     my $nt = $self->get_color('normal');
-    my %player = $self->{active_game}{players}{$nick};
+    my %player = %{$self->{active_game}{players}{$nick}};
     if (!$player{host} && !$chanop && !$owner) {
         my $message = $self->get_message('permission_denied');
         $self->respond($message, $where, $nick);
