@@ -118,7 +118,7 @@ sub view_command {
         my $possessive = (lc(substr $profile, -1) eq 's' ? $profile . "'" : $profile . "'s" );
         my $state = $user{state};
         my $oplocked;
-        if ($state ne 'approved' && !($chanop || $owner)) {
+        if ($state ne 'approved' && !($chanop || $owner || (lc $nick eq lc $profile))) {
             my $message;
             switch ($state) {
                 case "pending" {
@@ -134,7 +134,7 @@ sub view_command {
             $self->respond($message, $where, $nick);
             return 1;
         }
-        if ($user{restricted} && (!defined $self->get_user($nick) || $self->{users}{lc $nick}{state} ne 'approved') && !$chanop) {
+        if ($user{restricted} && (!defined $self->get_user($nick) || $self->{users}{lc $nick}{state} ne 'approved') && !($chanop || (lc $nick eq lc $profile))) {
             my $possessive = (lc(substr $profile, -1) eq 's' ? $profile . "'" : $profile . "'s" );
             my $message = sprintf('Sorry, %s. %s profile has been restricted to users with approved profiles only. Create a profile or get yours approved by the ops and try again.', $nick, $possessive);
             $self->respond($message, $where, $nick);
